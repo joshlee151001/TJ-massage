@@ -369,25 +369,24 @@ async function syncRead(){
   }catch(e){console.warn('sync read',e)}
 }
 /* 읽기-수정-쓰기: 원격 최신본에 변경을 적용해서 저장 (덮어쓰기 방지) */
-let syncBusy=false,syncQ=[];
+let syncBusy=false,syncQ=[],lastErr='';
 async function withRemote(mut){
   if(!BIN_ID){const rec=snapshot();mut(rec);applyRecord(rec);return}
   syncQ.push(mut);if(syncBusy)return;syncBusy=true;
   try{
     while(syncQ.length){
       let rec=null;
-      for(let i=0;i<4&&!rec;i++){try{rec=await fetchRemote()}catch(e){await new Promise(r=>setTimeout(r,700*(i+1)))}}
-      if(!rec){ADMIN.toast='저장소 연결 불안정 — 잠시 후 다시 시도해주세요';syncQ.length=0;break}
+      for(let i=0;i<4&&!rec;i++){try{rec=await fetchRemote()}catch(e){lastErr=String(e&&e.message||e);await new Promise(r=>setTimeout(r,700*(i+1)))}}
+      if(!rec){ADMIN.toast='⚠️ 저장소 읽기 실패: '+lastErr;syncQ.length=0;break}
       ['STAFF','ROOMS','WAIT','STATS','COURSES','ADDONS','PRESSURES','FOCUS','QUEUE'].forEach(k=>{if(rec[k]==null)rec[k]=snapshot()[k]});
       if(!rec.ticketNo)rec.ticketNo=ticketNo;
       const batch=syncQ.splice(0);batch.forEach(m=>m(rec));
       applyRecord(rec);
       const body=JSON.stringify(rec);
       const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:'PUT',headers:PUT_H,body});
-      if(!r.ok)console.warn('PUT',r.status);
-      lastSync=body;
+      if(!r.ok){lastErr='PUT '+r.status+' '+(await r.text()).slice(0,120);ADMIN.toast='⚠️ 저장소 쓰기 실패: '+lastErr}else{lastErr='';lastSync=body}
     }
-  }catch(e){console.warn('sync write',e)}
+  }catch(e){lastErr=String(e&&e.message||e);ADMIN.toast='⚠️ 저장소 오류: '+lastErr}
   finally{syncBusy=false;render()}
 }
 /* 직원 화면 설정 변경(관리사/룸/대기/메뉴 등)을 원격에 반영. 룸은 원격의 사용중 정보 유지 */
@@ -451,7 +450,7 @@ function vAttract(){
       <button class="go" data-act="start">터치하여 시작 <b>👉</b></button>
       <div class="meta"><span>🕙 10:00 - 02:00</span><span>⏱ ${WAIT.count>0?'대기 '+WAIT.count+'명 · 약 '+WAIT.minutes+'분':'대기 없음'}</span><span>🪑 ${ROOMS.filter(r=>!r.guest).length}자리 비어있음</span></div>
     </div>
-    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v3</button>
+    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v5</button>
   </div>${vSyncModal()}`;
 }
 function vSyncModal(){
@@ -531,7 +530,7 @@ function vDone(){
   return `<div class="done">
     <div class="emo">🎉</div>
     <h1>카운터로 가세요!</h1>
-    <p class="lead">접수가 완료되었습니다</p>
+    <p class="lead">${S.saved===false?'⚠️ 저장소 전송 실패 — 직원에게 말씀해주세요':'접수가 완료되었습니다'}</p>
     <div class="ticket">
       <div style="font-family:var(--f-ui);font-size:13px;color:var(--muted);letter-spacing:.08em;font-weight:600">접수 번호</div>
       <div class="big num">${S.ticket.no}</div>
@@ -772,7 +771,7 @@ function render(){
     <header><div class="brand">TJ<em>.</em><small>TJ MASSAGE</small></div><button class="home" data-act="home">처음으로</button></header>
     ${S.step<6?`<div class="progress">${steps}</div>`:''}
     <main>${view}</main>
-  </div>${vDock()}${vSheet()}${idleHTML()}`;
+  </div>${vDock()}${vSheet()}${idleHTML()}${ADMIN.toast?`<div class="toast" data-act="closetoast">${ADMIN.toast}</div>`:''}`;
   root.dataset.step=S.step;
   sc.scrollTop=keep;
 }
@@ -794,6 +793,18 @@ document.addEventListener('pointerdown',e=>{
 });
 
 /* 입력 */
+
+/* 입력 중인 값이 재렌더로 사라지지 않도록 상태에 즉시 저장 */
+document.addEventListener('input',e=>{
+  const t=e.target;if(!t)return;
+  if(ADMIN.form&&t.dataset.mk&&t.dataset.mk!=='binid')ADMIN.form[t.dataset.mk]=t.value;
+  if(ADMIN.edit){
+    if(t.id==='e-name')ADMIN.edit.name=t.value;
+    if(t.id==='e-desc')ADMIN.edit.desc=t.value;
+    if(t.id==='e-price')ADMIN.edit.price=+t.value||0;
+    if(t.dataset.act==='pedit'){const i=+t.dataset.i;const row=ADMIN.edit.pricesArr[i];if(row){if(t.dataset.k==='min')row[0]=+t.value||0;else row[1]=+t.value||0}}
+  }
+});
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t||t.disabled)return;
   const a=t.dataset.act,v=t.dataset.v;
@@ -905,12 +916,12 @@ function finish(){
     if(pay!=='counter'){rec.STATS=rec.STATS||{revenue:0,orders:0};rec.STATS.revenue+=amount;rec.STATS.orders++}
     S.ticket={no,at,room:roomName};
   });
-  const wait=()=>{if(syncBusy){setTimeout(wait,100);return}S.processing=false;S.step=6;doneLeft=20;render()};
+  let n=0;const wait=()=>{if(syncBusy&&n++<200){setTimeout(wait,100);return}S.saved=!lastErr&&!!S.ticket;if(!S.ticket)S.ticket={no:'(미발급)',at,room:'-'};S.processing=false;S.step=6;doneLeft=S.saved?20:60;render()};
   wait();
 }
 
 let adminTicks=0,toastT=null;
-setInterval(()=>{if(ADMIN.toast&&!toastT){toastT=setTimeout(()=>{ADMIN.toast='';toastT=null;if(ADMIN.on||S.step===0)render()},2500)}},300);
+setInterval(()=>{if(ADMIN.toast&&!toastT){toastT=setTimeout(()=>{ADMIN.toast='';toastT=null;render()},ADMIN.toast.startsWith('⚠️')?8000:2500)}},300);
 setInterval(()=>{
   const ck=document.getElementById('clock');if(ck)ck.textContent=hm(new Date());
   const ck2=document.getElementById('clock2');if(ck2)ck2.textContent=hm(new Date());
