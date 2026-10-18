@@ -331,12 +331,13 @@ let WAIT={count:0,minutes:0};
 
 /* ======== JSONBin 공유 저장소 (아이패드 간 동기화) ======== */
 const JSONBIN_KEY='$2a$10$kPfpaCosO2VwEaMbtcU2.epyapqZEw7w0NK8TZeNmRhL.trmnejK6';
-let BIN_ID=(location.hash.match(/bin=([a-zA-Z0-9]+)/)||[])[1]||localStorage.getItem('TJ_BIN')||'';
+const DEFAULT_BIN='6ad47618ac6210605a3b7828'; /* 매장 공용 저장소 (공개 bin: 읽기는 키 없이) */
+let BIN_ID=(location.hash.match(/bin=([a-zA-Z0-9]+)/)||[])[1]||localStorage.getItem('TJ_BIN')||DEFAULT_BIN;
 let lastSync='',syncT=null,ticketNo=100;
 async function ensureBin(){
   if(BIN_ID)return;
   try{
-    const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Name':'TJ-massage','X-Bin-Private':'true'},body:JSON.stringify({STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo})});
+    const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Name':'TJ-massage','X-Bin-Private':'false'},body:JSON.stringify({STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo})});
     const d=await r.json();
     BIN_ID=d.metadata.id;
     localStorage.setItem('TJ_BIN',BIN_ID);
@@ -355,8 +356,9 @@ function applyRecord(rec){
   if(rec.QUEUE)QUEUE=rec.QUEUE;if(rec.ticketNo)ticketNo=Math.max(ticketNo,rec.ticketNo);
 }
 async function fetchRemote(){
-  const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{headers:GET_H,cache:'no-store'});
-  if(!r.ok)throw new Error('GET '+r.status);
+  let r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{cache:'no-store'}).catch(e=>{throw new Error('네트워크: '+(e.message||e))});
+  if(r.status===401||r.status===403)r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{headers:GET_H,cache:'no-store'});
+  if(!r.ok)throw new Error('GET '+r.status+' '+(await r.text()).slice(0,80));
   const j=await r.json();return j.record||null;
 }
 async function syncRead(){
@@ -450,7 +452,7 @@ function vAttract(){
       <button class="go" data-act="start">터치하여 시작 <b>👉</b></button>
       <div class="meta"><span>🕙 10:00 - 02:00</span><span>⏱ ${WAIT.count>0?'대기 '+WAIT.count+'명 · 약 '+WAIT.minutes+'분':'대기 없음'}</span><span>🪑 ${ROOMS.filter(r=>!r.guest).length}자리 비어있음</span></div>
     </div>
-    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v5</button>
+    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v6</button>
   </div>${vSyncModal()}`;
 }
 function vSyncModal(){
@@ -463,7 +465,9 @@ function vSyncModal(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
       <button class="aact" data-act="synccopy" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">📋 ID 복사</button>
       <button class="aact" data-act="syncnew" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">🆕 새로 만들기</button>
+      <button class="aact" data-act="syncdiag" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">🩺 연결 진단</button>
     </div>
+    <pre id="diag-out" style="margin:0;white-space:pre-wrap;font-size:12px;color:#2A2016;background:#F7F7F5;padding:10px;border-radius:8px;min-height:40px;font-family:var(--f-ui)">${ADMIN.diag||('마지막 오류: '+(lastErr||'없음'))}</pre>
     <div class="mbtns"><button class="aact" data-act="closesync" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">닫기</button><button class="aact primary" data-act="syncsave" style="background:#FF7A59;border-color:#FF7A59;color:#fff">이 ID로 연결</button></div>
   </div></div>${ADMIN.toast?`<div class="toast" data-act="closetoast">${ADMIN.toast}</div>`:''}`;
 }
@@ -810,7 +814,13 @@ document.addEventListener('click',e=>{
   const a=t.dataset.act,v=t.dataset.v;
   switch(a){
     case 'noop':return;
-    case 'syncsettings':ADMIN.syncOpen=true;break;
+    case 'syncsettings':ADMIN.syncOpen=true;ADMIN.diag='';break;
+    case 'syncdiag':{ADMIN.diag='진단 중...';render();(async()=>{const L=[];const T=async(name,fn)=>{try{const r=await fn();L.push(name+': '+r)}catch(e){L.push(name+': 실패 — '+(e.message||e))}};
+      await T('1) 사이트 접속',async()=>{const r=await fetch(location.href.split('#')[0],{cache:'no-store'});return r.status});
+      await T('2) jsonbin 읽기(키 없음)',async()=>{const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{cache:'no-store'});return r.status});
+      await T('3) jsonbin 읽기(키 있음)',async()=>{const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{headers:GET_H,cache:'no-store'});return r.status});
+      await T('4) jsonbin 쓰기',async()=>{const rec=await fetchRemote();const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:'PUT',headers:PUT_H,body:JSON.stringify(rec)});return r.status});
+      L.push('bin: '+BIN_ID+' · '+navigator.userAgent.slice(0,60));ADMIN.diag=L.join('\n');render()})();return}
     case 'closesync':ADMIN.syncOpen=false;break;
     case 'synccopy':{const txt=location.origin+location.pathname+'#bin='+BIN_ID;try{navigator.clipboard.writeText(txt).then(()=>{ADMIN.toast='URL 복사됨! 다른 아이패드에 붙여넣으세요';render()}).catch(()=>{ADMIN.toast='복사 실패 — 직접 입력하세요';render()})}catch(e){ADMIN.toast='복사 실패';render()}return}
     case 'syncnew':{BIN_ID='';localStorage.removeItem('TJ_BIN');history.replaceState(null,'',location.pathname);ensureBin().then(()=>{syncRead();render()});ADMIN.toast='새 저장소 만드는 중...';break}
