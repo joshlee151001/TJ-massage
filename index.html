@@ -310,7 +310,7 @@ let PRESSURES=['살살','보통','세게'];
 const STEPS=['코스','옵션','시간','정보','결제'];
 const IDLE_SEC=60,IDLE_WARN=15;
 
-let S,idleT=0,idleWarn=false,warnLeft=IDLE_WARN,doneLeft=0,ticketNo=42,sheetOpen=false;
+let S,idleT=0,idleWarn=false,warnLeft=IDLE_WARN,doneLeft=0,sheetOpen=false;
 let ADMIN={on:false,pin:'',tab:'queue'};
 let QUEUE=[];
 let ROOMS=[
@@ -327,6 +327,59 @@ let STAFF=[
 ];
 let STATS={revenue:0,orders:0};
 let WAIT={count:0,minutes:0};
+
+/* ======== JSONBin 공유 저장소 (아이패드 간 동기화) ======== */
+const JSONBIN_KEY='$2a$10$ZwwFPEMTJjlCY7fc9Tgp.uXB03xkIkjAf7K94KnE.CfLZtRXIvj4S';
+let BIN_ID=(location.hash.match(/bin=([a-zA-Z0-9]+)/)||[])[1]||localStorage.getItem('TJ_BIN')||'';
+let lastSync='',syncT=null,ticketNo=100;
+async function ensureBin(){
+  if(BIN_ID)return;
+  try{
+    const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Name':'TJ-massage','X-Bin-Private':'true'},body:JSON.stringify({STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo})});
+    const d=await r.json();
+    BIN_ID=d.metadata.id;
+    localStorage.setItem('TJ_BIN',BIN_ID);
+    location.hash='bin='+BIN_ID;
+    ADMIN.toast='저장소 생성 완료 — URL을 다른 아이패드에서도 그대로 여세요';
+    render();
+  }catch(e){console.warn('bin create',e);ADMIN.toast='저장소 연결 실패 — 로컬 모드로 작동'}
+}
+async function syncRead(){
+  if(!BIN_ID)return;
+  try{
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{'X-Master-Key':JSONBIN_KEY}});
+    if(!r.ok)return;
+    const {record}=await r.json();
+    if(!record)return;
+    const sig=JSON.stringify(record);
+    if(sig===lastSync)return;
+    lastSync=sig;
+    if(record.STAFF)STAFF=record.STAFF;
+    if(record.ROOMS)ROOMS=record.ROOMS;
+    if(record.WAIT)WAIT=record.WAIT;
+    if(record.STATS)STATS=record.STATS;
+    if(record.COURSES)COURSES=record.COURSES;
+    if(record.ADDONS)ADDONS=record.ADDONS;
+    if(record.PRESSURES)PRESSURES=record.PRESSURES;
+    if(record.FOCUS)FOCUS=record.FOCUS;
+    if(record.QUEUE)QUEUE=record.QUEUE;
+    if(record.ticketNo)ticketNo=Math.max(ticketNo,record.ticketNo);
+    if(ADMIN.on||S.step===0||S.step===6)render();
+  }catch(e){console.warn('sync read',e)}
+}
+function syncAll(){
+  if(!BIN_ID)return;
+  clearTimeout(syncT);
+  syncT=setTimeout(async()=>{
+    const body=JSON.stringify({STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo});
+    try{await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},body});lastSync=body}catch(e){console.warn('sync write',e)}
+  },400);
+}
+/* 호환용 (이전 코드에서 호출) */
+function syncOrder(){syncAll()}
+function unsyncOrder(){syncAll()}
+ensureBin().then(()=>{syncRead();setInterval(syncRead,3000)});
+
 function fresh(){S={step:0,course:null,dur:null,pressure:'보통',focus:[],addons:[],people:1,time:null,phone:'',health:[],consent:false,pay:null,processing:false,ticket:null};sheetOpen=false;ADMIN.on=false;ADMIN.pin='';ADMIN.tab='queue'}
 fresh();
 
@@ -784,6 +837,10 @@ document.addEventListener('click',e=>{
       if(S.step===5){S.processing=true;render();setTimeout(finish,2200);return}
       S.step++;if(S.step===4&&!S.phone)S.phone='010';break;
   }
+  /* 공용 상태를 바꾼 경우 공유 */
+  if(['wait','newroom','delroom','newstaff','togglestaff','delstaff','resetstats','newcourse','delcourse','newaddon','deladdon','addlist','editlist','dellist','okform','saveedit'].includes(a))syncAll();
+  if(a==='delqueue'||a==='finish'){/* 룸 변경 공유 */ syncAll(); unsyncOrder(v);}
+  if(a==='startnow'){const q=QUEUE.find(x=>x.no===v);if(q)syncOrder(q);syncAll();}
   render();
 });
 document.addEventListener('pointerdown',()=>{idleT=0},{capture:true});
@@ -797,9 +854,11 @@ function finish(){
   const no='A-'+String(ticketNo).padStart(3,'0');
   const at=startAt();
   S.ticket={no,at,room:roomName};
-  QUEUE.push({no,phone:fmtPhone(S.phone),course:c.name+' '+S.dur+'분',pressure:S.pressure,focus:S.focus.slice(),people:S.people,at,room:roomName,status:freeRoom?'관리중':'대기',start:freeRoom?at:null,amount:total()});
+  const order={no,phone:fmtPhone(S.phone),course:c.name+' '+S.dur+'분',pressure:S.pressure,focus:S.focus.slice(),people:S.people,at,room:roomName,status:freeRoom?'관리중':'대기',start:freeRoom?at:null,amount:total()};
+  QUEUE.push(order);syncOrder(order);
   if(freeRoom){freeRoom.guest=no;freeRoom.until=hm(new Date(Date.now()+(15+S.dur)*60000))}
   if(S.pay!=='counter'){STATS.revenue+=total();STATS.orders++}
+  syncAll();
   S.processing=false;S.step=6;doneLeft=20;render();
 }
 
