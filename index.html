@@ -1,5 +1,6 @@
 <title>TJ massage 키오스크</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Gaegu:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -295,7 +296,7 @@ h2 .q{color:var(--muted);font-size:16px;font-family:var(--f-ui);font-weight:400;
 <div id="root"></div>
 
 <script>
-const COURSES=[
+let COURSES=[
   {id:'thai',emo:'🧘‍♀️',name:'타이 마사지',tag:'건식',desc:'스트레칭과 지압으로 몸이 쭉~ 펴져요',prices:{60:60000,90:85000,120:110000}},
   {id:'aroma',emo:'🌿',name:'아로마 오일',tag:'오일',desc:'향긋한 오일로 사르르 녹아들어요',prices:{60:70000,90:95000,120:120000}},
   {id:'deep',emo:'💪',name:'딥티슈',tag:'오일',desc:'뭉친 근육을 깊~게 풀어드려요',prices:{60:75000,90:100000}},
@@ -303,7 +304,7 @@ const COURSES=[
   {id:'head',emo:'💆‍♀️',name:'헤드 & 숄더',tag:'건식',desc:'머리·목·어깨 집중 케어',prices:{30:30000,60:50000}},
   {id:'hot',emo:'🪨',name:'핫스톤',tag:'오일',desc:'따끈한 돌이 몸속 깊이 스며들어요',prices:{60:80000,90:110000}}
 ];
-const ADDONS=[
+let ADDONS=[
   {id:'footbath',emo:'🛀',name:'족욕 10분',price:10000},
   {id:'scalp',emo:'✨',name:'헤드스파',price:20000},
   {id:'eye',emo:'👁',name:'눈 찜질팩',price:5000},
@@ -324,11 +325,7 @@ let ROOMS=[
   {id:'R7',type:'1인실',guest:null,until:null},
   {id:'C2',type:'커플룸',guest:null,until:null}
 ];
-let STAFF=[
-  {name:'민지',role:'여성',status:'대기',until:null},
-  {name:'수연',role:'여성',status:'대기',until:null},
-  {name:'태호',role:'남성',status:'대기',until:null}
-];
+let STAFF=[];
 let STATS={revenue:0,orders:0};
 let WAIT={count:0,minutes:0};
 
@@ -348,41 +345,66 @@ async function ensureBin(){
     render();
   }catch(e){console.warn('bin create',e);ADMIN.toast='저장소 연결 실패 — 로컬 모드로 작동'}
 }
+const GET_H={'X-Master-Key':JSONBIN_KEY};
+const PUT_H={'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY};
+function snapshot(){return {STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo}}
+function applyRecord(rec){
+  if(!rec)return;
+  if(rec.STAFF)STAFF=rec.STAFF;if(rec.ROOMS)ROOMS=rec.ROOMS;if(rec.WAIT)WAIT=rec.WAIT;if(rec.STATS)STATS=rec.STATS;
+  if(rec.COURSES)COURSES=rec.COURSES;if(rec.ADDONS)ADDONS=rec.ADDONS;if(rec.PRESSURES)PRESSURES=rec.PRESSURES;if(rec.FOCUS)FOCUS=rec.FOCUS;
+  if(rec.QUEUE)QUEUE=rec.QUEUE;if(rec.ticketNo)ticketNo=Math.max(ticketNo,rec.ticketNo);
+}
+async function fetchRemote(){
+  const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{headers:GET_H,cache:'no-store'});
+  if(!r.ok)throw new Error('GET '+r.status);
+  const j=await r.json();return j.record||null;
+}
 async function syncRead(){
-  if(!BIN_ID)return;
+  if(!BIN_ID||syncBusy)return;
   try{
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{'X-Master-Key':JSONBIN_KEY}});
-    if(!r.ok)return;
-    const {record}=await r.json();
-    if(!record)return;
-    const sig=JSON.stringify(record);
-    if(sig===lastSync)return;
-    lastSync=sig;
-    if(record.STAFF)STAFF=record.STAFF;
-    if(record.ROOMS)ROOMS=record.ROOMS;
-    if(record.WAIT)WAIT=record.WAIT;
-    if(record.STATS)STATS=record.STATS;
-    if(record.COURSES)COURSES=record.COURSES;
-    if(record.ADDONS)ADDONS=record.ADDONS;
-    if(record.PRESSURES)PRESSURES=record.PRESSURES;
-    if(record.FOCUS)FOCUS=record.FOCUS;
-    if(record.QUEUE)QUEUE=record.QUEUE;
-    if(record.ticketNo)ticketNo=Math.max(ticketNo,record.ticketNo);
-    if(ADMIN.on||S.step===0||S.step===6)render();
+    const rec=await fetchRemote();if(!rec)return;
+    const sig=JSON.stringify(rec);if(sig===lastSync)return;lastSync=sig;
+    applyRecord(rec);
+    if(ADMIN.on&&!ADMIN.form&&!ADMIN.edit)render();else if(S.step===0||S.step===6)render();
   }catch(e){console.warn('sync read',e)}
 }
-function syncAll(){
-  if(!BIN_ID)return;
-  clearTimeout(syncT);
-  syncT=setTimeout(async()=>{
-    const body=JSON.stringify({STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo});
-    try{await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},body});lastSync=body}catch(e){console.warn('sync write',e)}
-  },400);
+/* 읽기-수정-쓰기: 원격 최신본에 변경을 적용해서 저장 (덮어쓰기 방지) */
+let syncBusy=false,syncQ=[];
+async function withRemote(mut){
+  if(!BIN_ID){const rec=snapshot();mut(rec);applyRecord(rec);return}
+  syncQ.push(mut);if(syncBusy)return;syncBusy=true;
+  try{
+    while(syncQ.length){
+      let rec=null;
+      for(let i=0;i<4&&!rec;i++){try{rec=await fetchRemote()}catch(e){await new Promise(r=>setTimeout(r,700*(i+1)))}}
+      if(!rec){ADMIN.toast='저장소 연결 불안정 — 잠시 후 다시 시도해주세요';syncQ.length=0;break}
+      ['STAFF','ROOMS','WAIT','STATS','COURSES','ADDONS','PRESSURES','FOCUS','QUEUE'].forEach(k=>{if(rec[k]==null)rec[k]=snapshot()[k]});
+      if(!rec.ticketNo)rec.ticketNo=ticketNo;
+      const batch=syncQ.splice(0);batch.forEach(m=>m(rec));
+      applyRecord(rec);
+      const body=JSON.stringify(rec);
+      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:'PUT',headers:PUT_H,body});
+      if(!r.ok)console.warn('PUT',r.status);
+      lastSync=body;
+    }
+  }catch(e){console.warn('sync write',e)}
+  finally{syncBusy=false;render()}
 }
-/* 호환용 (이전 코드에서 호출) */
-function syncOrder(){syncAll()}
-function unsyncOrder(){syncAll()}
-ensureBin().then(()=>{syncRead();setInterval(syncRead,3000)});
+/* 직원 화면 설정 변경(관리사/룸/대기/메뉴 등)을 원격에 반영. 룸은 원격의 사용중 정보 유지 */
+function syncConfig(){
+  const L=snapshot();
+  withRemote(rec=>{
+    rec.STAFF=L.STAFF;rec.WAIT=L.WAIT;rec.STATS=L.STATS;rec.COURSES=L.COURSES;rec.ADDONS=L.ADDONS;rec.PRESSURES=L.PRESSURES;rec.FOCUS=L.FOCUS;
+    rec.ROOMS=L.ROOMS.map(lr=>{const rr=(rec.ROOMS||[]).find(x=>x.id===lr.id);return (rr&&rr.guest&&!lr.guest)?{...lr,guest:rr.guest,until:rr.until}:lr});
+  });
+}
+function syncQueue(mut){withRemote(mut)}
+/* 호환용 */
+function syncAll(){syncConfig()}
+function syncOrder(){}
+function unsyncOrder(){}
+let pollTick=0;
+ensureBin().then(()=>{syncRead();setInterval(()=>{pollTick++;if(ADMIN.on===true){if(pollTick%5===0)syncRead()}else if(S.step===0){if(pollTick%30===0)syncRead()}},1000)});
 
 function fresh(){S={step:0,course:null,dur:null,pressure:'보통',focus:[],addons:[],people:1,time:null,phone:'',health:[],consent:false,pay:null,processing:false,ticket:null};sheetOpen=false;ADMIN.on=false;ADMIN.pin='';ADMIN.tab='queue'}
 fresh();
@@ -429,7 +451,7 @@ function vAttract(){
       <button class="go" data-act="start">터치하여 시작 <b>👉</b></button>
       <div class="meta"><span>🕙 10:00 - 02:00</span><span>⏱ ${WAIT.count>0?'대기 '+WAIT.count+'명 · 약 '+WAIT.minutes+'분':'대기 없음'}</span><span>🪑 ${ROOMS.filter(r=>!r.guest).length}자리 비어있음</span></div>
     </div>
-    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'}</button>
+    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v3</button>
   </div>${vSyncModal()}`;
 }
 function vSyncModal(){
@@ -862,28 +884,29 @@ document.addEventListener('click',e=>{
       S.step++;if(S.step===4&&!S.phone)S.phone='010';break;
   }
   /* 공용 상태를 바꾼 경우 공유 */
-  if(['wait','newroom','delroom','newstaff','togglestaff','delstaff','resetstats','newcourse','delcourse','newaddon','deladdon','addlist','editlist','dellist','okform','saveedit'].includes(a))syncAll();
-  if(a==='delqueue'||a==='finish'){/* 룸 변경 공유 */ syncAll(); unsyncOrder(v);}
-  if(a==='startnow'){const q=QUEUE.find(x=>x.no===v);if(q)syncOrder(q);syncAll();}
+  if(['wait','newroom','delroom','newstaff','togglestaff','delstaff','resetstats','delcourse','deladdon','dellist','okform','saveedit'].includes(a))syncConfig();
+  if(a==='delqueue'||a==='finish')syncQueue(rec=>{rec.QUEUE=(rec.QUEUE||[]).filter(q=>q.no!==v);(rec.ROOMS||[]).forEach(r=>{if(r.guest===v){r.guest=null;r.until=null}})});
+  if(a==='startnow')syncQueue(rec=>{const q=(rec.QUEUE||[]).find(x=>x.no===v);if(q&&q.status!=='관리중'){q.status='관리중';q.start=hm(new Date());const r=(rec.ROOMS||[]).find(rr=>!rr.guest&&(q.people>=2?rr.type==='커플룸':rr.type==='1인실'));if(r){r.guest=q.no;r.until=hm(new Date(Date.now()+90*60000));q.room=r.id}}});
   render();
 });
 document.addEventListener('pointerdown',()=>{idleT=0},{capture:true});
 
 function finish(){
   if(!S.processing)return;
-  ticketNo++;
-  const c=course();
-  const freeRoom=ROOMS.find(r=>!r.guest&&(S.people>=2?r.type==='커플룸':r.type==='1인실'));
-  const roomName=freeRoom?freeRoom.id:'대기';
-  const no='A-'+String(ticketNo).padStart(3,'0');
-  const at=startAt();
-  S.ticket={no,at,room:roomName};
-  const order={no,phone:fmtPhone(S.phone),course:c.name+' '+S.dur+'분',pressure:S.pressure,focus:S.focus.slice(),people:S.people,at,room:roomName,status:freeRoom?'관리중':'대기',start:freeRoom?at:null,amount:total()};
-  QUEUE.push(order);syncOrder(order);
-  if(freeRoom){freeRoom.guest=no;freeRoom.until=hm(new Date(Date.now()+(15+S.dur)*60000))}
-  if(S.pay!=='counter'){STATS.revenue+=total();STATS.orders++}
-  syncAll();
-  S.processing=false;S.step=6;doneLeft=20;render();
+  const c=course();const dur=S.dur,people=S.people,phone=fmtPhone(S.phone),pressure=S.pressure,focus=S.focus.slice(),amount=total(),pay=S.pay,at=startAt();
+  withRemote(rec=>{
+    rec.ticketNo=Math.max(rec.ticketNo||100,ticketNo)+1;
+    const no='A-'+String(rec.ticketNo).padStart(3,'0');
+    const freeRoom=(rec.ROOMS||[]).find(r=>!r.guest&&(people>=2?r.type==='커플룸':r.type==='1인실'));
+    const roomName=freeRoom?freeRoom.id:'대기';
+    const order={no,phone,course:c.name+' '+dur+'분',pressure,focus,people,at,room:roomName,status:freeRoom?'관리중':'대기',start:freeRoom?at:null,amount,pay,ts:Date.now()};
+    rec.QUEUE=(rec.QUEUE||[]);rec.QUEUE.push(order);
+    if(freeRoom){freeRoom.guest=no;freeRoom.until=hm(new Date(Date.now()+(15+dur)*60000))}
+    if(pay!=='counter'){rec.STATS=rec.STATS||{revenue:0,orders:0};rec.STATS.revenue+=amount;rec.STATS.orders++}
+    S.ticket={no,at,room:roomName};
+  });
+  const wait=()=>{if(syncBusy){setTimeout(wait,100);return}S.processing=false;S.step=6;doneLeft=20;render()};
+  wait();
 }
 
 let adminTicks=0,toastT=null;
