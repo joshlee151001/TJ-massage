@@ -329,7 +329,7 @@ let STATS={revenue:0,orders:0};
 let WAIT={count:0,minutes:0};
 
 /* ======== JSONBin 공유 저장소 (아이패드 간 동기화) ======== */
-const JSONBIN_KEY='$2a$10$ZwwFPEMTJjlCY7fc9Tgp.uXB03xkIkjAf7K94KnE.CfLZtRXIvj4S';
+const JSONBIN_KEY='$2a$10$kPfpaCosO2VwEaMbtcU2.epyapqZEw7w0NK8TZeNmRhL.trmnejK6';
 let BIN_ID=(location.hash.match(/bin=([a-zA-Z0-9]+)/)||[])[1]||localStorage.getItem('TJ_BIN')||'';
 let lastSync='',syncT=null,ticketNo=100;
 async function ensureBin(){
