@@ -198,6 +198,10 @@ h2 .q{color:var(--muted);font-size:16px;font-family:var(--f-ui);font-weight:400;
 .ticket .row2 div b{font-family:var(--f-display);font-size:26px;color:var(--deep)}
 .done .again{height:68px;padding:0 40px;border-radius:20px;background:var(--deep);color:#FFE4CC;font-family:var(--f-display);font-size:22px;font-weight:700;box-shadow:0 4px 0 rgba(0,0,0,.2)}
 
+
+.sync-badge{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;font-family:var(--f-ui);font-size:13px;font-weight:600;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.75);color:#5C4432;border:1px solid rgba(0,0,0,.08)}
+.sync-badge.bad{background:#FFE1D6;color:#C94A2E}
+
 /* ---- 유휴 ---- */
 .idle{position:fixed;inset:0;background:rgba(42,32,22,.5);display:grid;place-items:center;z-index:20;padding:20px}
 .idle .box{background:var(--paper);border-radius:28px;padding:36px;max-width:420px;text-align:center;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 0 rgba(0,0,0,.1)}
@@ -206,77 +210,77 @@ h2 .q{color:var(--muted);font-size:16px;font-family:var(--f-ui);font-weight:400;
 .idle .btn{height:68px;border-radius:20px;background:var(--accent);color:var(--accent-ink);font-family:var(--f-display);font-size:22px;font-weight:700;box-shadow:0 4px 0 #E65A3C;border:0;cursor:pointer}
 
 /* ---- 관리자 ---- */
-.admin{position:fixed;inset:0;background:#15232B;color:#E6EEF2;overflow:auto;z-index:30;padding:24px max(20px,env(safe-area-inset-left,0px)) 40px max(20px,env(safe-area-inset-right,0px))}
-.admin-pin{position:fixed;inset:0;background:#15232B;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px 20px}
-.pin-display{font-family:var(--f-ui);font-size:48px;letter-spacing:.5em;color:#F7E4C9;padding:10px 20px 10px 40px;background:#2A3E4A;border-radius:16px;min-width:200px;text-align:center}
+.admin{position:fixed;inset:0;background:#FFFFFF;color:#2A2016;overflow:auto;z-index:30;padding:24px max(20px,env(safe-area-inset-left,0px)) 40px max(20px,env(safe-area-inset-right,0px))}
+.admin-pin{position:fixed;inset:0;background:#FFFFFF;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px 20px}
+.pin-display{font-family:var(--f-ui);font-size:48px;letter-spacing:.5em;color:#2A2016;padding:10px 20px 10px 40px;background:#EFEEEA;border-radius:16px;min-width:200px;text-align:center}
 .admin-pin .pad{max-width:340px;width:100%}
-.admin-pin .pad button{background:#2A3E4A;color:#E6EEF2;border-color:#3D5665;box-shadow:0 3px 0 #0E1A20}
-.admin-pin .pad button.fn{color:#9FB1BC}
+.admin-pin .pad button{background:#EFEEEA;color:#2A2016;border-color:#D9D6CF;box-shadow:0 3px 0 #D9D6CF}
+.admin-pin .pad button.fn{color:#7A7266}
 .admin-tabs{display:flex;gap:6px;margin:16px 0 20px;overflow-x:auto;padding-bottom:4px}
-.admin-tabs button{padding:12px 22px;border-radius:12px;background:#1F2F38;color:#9FB1BC;font-family:var(--f-ui);font-size:16px;font-weight:600;white-space:nowrap;border:1px solid #2A3E4A}
-.admin-tabs button.on{background:#C9A24B;color:#15232B}
-.admin h2{color:#E6EEF2;font-family:var(--f-ui);font-size:16px;font-weight:600;letter-spacing:.08em;margin:28px 0 14px;text-transform:uppercase;color:#9FB1BC}
+.admin-tabs button{padding:12px 22px;border-radius:12px;background:#F7F7F5;color:#7A7266;font-family:var(--f-ui);font-size:16px;font-weight:600;white-space:nowrap;border:1px solid #EFEEEA}
+.admin-tabs button.on{background:#FF7A59;color:#fff}
+.admin h2{color:#2A2016;font-family:var(--f-ui);font-size:16px;font-weight:600;letter-spacing:.08em;margin:28px 0 14px;text-transform:uppercase;color:#7A7266}
 
 .cards{display:flex;flex-direction:column;gap:12px}
-.acard{background:#1F2F38;border-radius:16px;padding:18px;border-left:4px solid #3D5665}
-.acard.hot{border-left-color:#C9A24B}
-.acard.warn{border-left-color:#E67E4C}
+.acard{background:#F7F7F5;border-radius:16px;padding:18px;border-left:4px solid #D9D6CF}
+.acard.hot{border-left-color:#FF7A59}
+.acard.warn{border-left-color:#E65A3C}
 .arow{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.ano{font-family:var(--f-ui);font-size:22px;font-weight:700;color:#F7E4C9}
+.ano{font-family:var(--f-ui);font-size:22px;font-weight:700;color:#2A2016}
 .aname{font-family:var(--f-ui);font-size:17px;margin-top:6px}
-.afoot{display:flex;justify-content:space-between;margin-top:10px;color:#9FB1BC;font-family:var(--f-ui);font-size:14px;flex-wrap:wrap;gap:8px}
+.afoot{display:flex;justify-content:space-between;margin-top:10px;color:#7A7266;font-family:var(--f-ui);font-size:14px;flex-wrap:wrap;gap:8px}
 .astat{padding:4px 12px;border-radius:999px;font-family:var(--f-ui);font-size:13px;font-weight:700}
-.s-on{background:#C9A24B;color:#15232B}
-.s-wait{background:#E67E4C;color:#15232B}
-.s-res{background:#3D5665;color:#E6EEF2}
-.s-rest{background:#5A6D7A;color:#15232B}
+.s-on{background:#FF7A59;color:#fff}
+.s-wait{background:#E65A3C;color:#fff}
+.s-res{background:#D9D6CF;color:#2A2016}
+.s-rest{background:#A09A90;color:#FFFFFF}
 .aactions{display:flex;gap:8px;margin-top:12px}
-.aact{height:44px;padding:0 16px;border-radius:10px;background:#2A3E4A;color:#E6EEF2;font-family:var(--f-ui);font-size:14px;font-weight:600}
-.aact.primary{background:#C9A24B;color:#15232B}
+.aact{height:44px;padding:0 16px;border-radius:10px;background:#EFEEEA;color:#2A2016;font-family:var(--f-ui);font-size:14px;font-weight:600}
+.aact.primary{background:#FF7A59;color:#fff}
 
 .rgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.rbox{background:#1F2F38;border-radius:16px;padding:20px;min-height:120px}
-.rbox.busy{background:#2A3E4A;border:2px solid #C9A24B}
-.rbox.free{border:2px dashed #3D5665}
-.rid{font-family:var(--f-display);font-size:36px;font-weight:700;color:#F7E4C9;line-height:1}
-.rtype{font-family:var(--f-ui);font-size:13px;color:#9FB1BC;margin-top:4px}
-.rguest{font-family:var(--f-ui);font-size:18px;color:#C9A24B;font-weight:700;margin-top:10px}
-.runtil{font-family:var(--f-ui);font-size:14px;color:#9FB1BC}
-.rfree{font-family:var(--f-ui);font-size:14px;color:#5A6D7A;margin-top:14px}
+.rbox{background:#F7F7F5;border-radius:16px;padding:20px;min-height:120px}
+.rbox.busy{background:#EFEEEA;border:2px solid #FF7A59}
+.rbox.free{border:2px dashed #D9D6CF}
+.rid{font-family:var(--f-display);font-size:36px;font-weight:700;color:#2A2016;line-height:1}
+.rtype{font-family:var(--f-ui);font-size:13px;color:#7A7266;margin-top:4px}
+.rguest{font-family:var(--f-ui);font-size:18px;color:#FF7A59;font-weight:700;margin-top:10px}
+.runtil{font-family:var(--f-ui);font-size:14px;color:#7A7266}
+.rfree{font-family:var(--f-ui);font-size:14px;color:#A09A90;margin-top:14px}
 
 .kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.kpi{background:#1F2F38;border-radius:16px;padding:18px}
-.kpi span{display:block;font-family:var(--f-ui);font-size:12px;color:#9FB1BC;letter-spacing:.08em;font-weight:600;text-transform:uppercase}
-.kpi b{display:block;font-family:var(--f-ui);font-size:22px;color:#F7E4C9;margin-top:6px;font-weight:700}
+.kpi{background:#F7F7F5;border-radius:16px;padding:18px}
+.kpi span{display:block;font-family:var(--f-ui);font-size:12px;color:#7A7266;letter-spacing:.08em;font-weight:600;text-transform:uppercase}
+.kpi b{display:block;font-family:var(--f-ui);font-size:22px;color:#2A2016;margin-top:6px;font-weight:700}
 .bars{display:flex;flex-direction:column;gap:10px}
 .bar{display:grid;grid-template-columns:120px 1fr 40px;align-items:center;gap:12px;font-family:var(--f-ui);font-size:15px}
-.btrack{height:24px;background:#1F2F38;border-radius:12px;overflow:hidden}
-.bfill{height:100%;background:linear-gradient(90deg,#C9A24B,#E67E4C);border-radius:12px}
-.bar b{text-align:right;color:#F7E4C9}
+.btrack{height:24px;background:#F7F7F5;border-radius:12px;overflow:hidden}
+.bfill{height:100%;background:linear-gradient(90deg,#FF7A59,#E65A3C);border-radius:12px}
+.bar b{text-align:right;color:#2A2016}
 .chip-list{display:flex;flex-wrap:wrap;gap:8px}
-.chip-item{display:inline-flex;align-items:center;gap:8px;background:#1F2F38;border:1px solid #2A3E4A;padding:6px 6px 6px 16px;border-radius:999px;font-family:var(--f-ui);font-size:14px;color:#E6EEF2}
+.chip-item{display:inline-flex;align-items:center;gap:8px;background:#F7F7F5;border:1px solid #EFEEEA;padding:6px 6px 6px 16px;border-radius:999px;font-family:var(--f-ui);font-size:14px;color:#2A2016}
 .chip-item .aact{height:30px;padding:0 10px;font-size:12px}
-.wait-widget{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;background:#1F2F38;border:1px solid #2A3E4A;padding:18px;border-radius:16px;margin-bottom:18px}
+.wait-widget{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;background:#F7F7F5;border:1px solid #EFEEEA;padding:18px;border-radius:16px;margin-bottom:18px}
 .wait-block{display:flex;flex-direction:column;gap:6px}
-.wait-block>span{font-family:var(--f-ui);font-size:11px;letter-spacing:.14em;color:#9FB1BC;text-transform:uppercase;font-weight:600}
-.wait-block b{font-family:var(--f-display);font-size:22px;color:#F7E4C9;min-width:70px;text-align:center}
+.wait-block>span{font-family:var(--f-ui);font-size:11px;letter-spacing:.14em;color:#7A7266;text-transform:uppercase;font-weight:600}
+.wait-block b{font-family:var(--f-display);font-size:22px;color:#2A2016;min-width:70px;text-align:center}
 .wnum{display:flex;align-items:center;gap:8px}
-.empty-state{text-align:center;padding:50px 20px;border:2px dashed #2A3E4A;border-radius:16px;background:#1F2F38}
-.einput{width:100%;box-sizing:border-box;background:#2A3E4A;border:1px solid #3D5665;color:#F7E4C9;font:inherit;font-family:var(--f-ui);font-size:17px;padding:12px 16px;border-radius:8px}
-.einput:focus{outline:2px solid #C9A24B;outline-offset:1px}
-.aact:hover{background:#3D5665}
+.empty-state{text-align:center;padding:50px 20px;border:2px dashed #EFEEEA;border-radius:16px;background:#F7F7F5}
+.einput{width:100%;box-sizing:border-box;background:#EFEEEA;border:1px solid #D9D6CF;color:#2A2016;font:inherit;font-family:var(--f-ui);font-size:17px;padding:12px 16px;border-radius:8px}
+.einput:focus{outline:2px solid #FF7A59;outline-offset:1px}
+.aact:hover{background:#D9D6CF}
 
 
-.mbg{position:fixed;inset:0;background:rgba(21,35,43,.75);z-index:40;display:grid;place-items:center;padding:16px}
-.mbox{background:#1F2F38;border:1px solid #2A3E4A;padding:28px;max-width:420px;width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;border-radius:16px}
-.mtitle{margin:0 0 4px;font-family:var(--f-display);font-size:26px;color:#F7E4C9}
-.mlbl{font-family:var(--f-ui);font-size:11px;letter-spacing:.14em;color:#9FB1BC;text-transform:uppercase;font-weight:600;margin-top:6px}
-.mbox .opt{min-height:48px;padding:0 20px;background:#2A3E4A;border:2px solid #3D5665;color:#E6EEF2;font-family:var(--f-ui);font-size:15px;font-weight:500;display:inline-flex;align-items:center;border-radius:12px}
-.mbox .opt.sel{background:#C9A24B;color:#15232B;border-color:#C9A24B}
+.mbg{position:fixed;inset:0;background:rgba(42,32,22,.45);z-index:40;display:grid;place-items:center;padding:16px}
+.mbox{background:#F7F7F5;border:1px solid #EFEEEA;padding:28px;max-width:420px;width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;border-radius:16px}
+.mtitle{margin:0 0 4px;font-family:var(--f-display);font-size:26px;color:#2A2016}
+.mlbl{font-family:var(--f-ui);font-size:11px;letter-spacing:.14em;color:#7A7266;text-transform:uppercase;font-weight:600;margin-top:6px}
+.mbox .opt{min-height:48px;padding:0 20px;background:#EFEEEA;border:2px solid #D9D6CF;color:#2A2016;font-family:var(--f-ui);font-size:15px;font-weight:500;display:inline-flex;align-items:center;border-radius:12px}
+.mbox .opt.sel{background:#FF7A59;color:#fff;border-color:#FF7A59}
 .mbtns{display:flex;gap:10px;margin-top:12px}
 .mbtns button{flex:1;height:48px;border-radius:10px}
 .mbtns button.primary{flex:2}
-.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#F7E4C9;color:#15232B;padding:14px 24px;font-family:var(--f-ui);font-size:14px;z-index:50;cursor:pointer;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.3);font-weight:600}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#2A2016;color:#fff;padding:14px 24px;font-family:var(--f-ui);font-size:14px;z-index:50;cursor:pointer;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.3);font-weight:600}
 
 @media (max-width:640px){
   .courses{grid-template-columns:1fr}
@@ -311,7 +315,7 @@ const STEPS=['코스','옵션','시간','정보','결제'];
 const IDLE_SEC=60,IDLE_WARN=15;
 
 let S,idleT=0,idleWarn=false,warnLeft=IDLE_WARN,doneLeft=0,sheetOpen=false;
-let ADMIN={on:false,pin:'',tab:'queue'};
+let ADMIN={on:false,pin:'',tab:'queue',edit:null,form:null,toast:'',syncOpen:false};
 let QUEUE=[];
 let ROOMS=[
   {id:'R1',type:'1인실',guest:null,until:null},
@@ -425,7 +429,22 @@ function vAttract(){
       <button class="go" data-act="start">터치하여 시작 <b>👉</b></button>
       <div class="meta"><span>🕙 10:00 - 02:00</span><span>⏱ ${WAIT.count>0?'대기 '+WAIT.count+'명 · 약 '+WAIT.minutes+'분':'대기 없음'}</span><span>🪑 ${ROOMS.filter(r=>!r.guest).length}자리 비어있음</span></div>
     </div>
-  </div>`;
+    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'}</button>
+  </div>${vSyncModal()}`;
+}
+function vSyncModal(){
+  if(!ADMIN.syncOpen)return ADMIN.toast?`<div class="toast" data-act="closetoast">${ADMIN.toast}</div>`:'';
+  return `<div class="mbg" data-act="closesync"><div class="mbox" data-act="noop" style="background:#fff;border-color:#eee">
+    <h3 class="mtitle" style="color:#2A2016">저장소 연결 설정</h3>
+    <p style="margin:0;font-size:14px;color:#8A7A62;font-family:var(--f-ui)">두 아이패드가 <b>같은 ID</b>를 쓰면 주문이 공유돼요.</p>
+    <label class="mlbl" style="color:#8A7A62">현재 저장소 ID</label>
+    <input class="einput" data-mk="binid" id="binid-input" value="${BIN_ID}" placeholder="비어있으면 자동 생성됨" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <button class="aact" data-act="synccopy" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">📋 ID 복사</button>
+      <button class="aact" data-act="syncnew" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">🆕 새로 만들기</button>
+    </div>
+    <div class="mbtns"><button class="aact" data-act="closesync" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">닫기</button><button class="aact primary" data-act="syncsave" style="background:#FF7A59;border-color:#FF7A59;color:#fff">이 ID로 연결</button></div>
+  </div></div>${ADMIN.toast?`<div class="toast" data-act="closetoast">${ADMIN.toast}</div>`:''}`;
 }
 
 function vCourse(){
@@ -547,7 +566,7 @@ function vAdmin(){
   if(ADMIN.on==='pin'){
     return `<div class="admin-pin">
       <h1 style="color:#fff;margin:0 0 12px">관리자 모드</h1>
-      <p class="lead" style="color:#B5C4CE">PIN을 입력하세요 (기본: 0517)</p>
+      <p class="lead" style="color:#7A7266">PIN을 입력하세요 (기본: 0517)</p>
       <div class="pin-display">${'●'.repeat(ADMIN.pin.length).padEnd(4,'○')}</div>
       <div class="pad" style="max-width:320px">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-act="apin" data-v="${n}">${n}</button>`).join('')}
         <button class="fn" data-act="apinclr">지움</button><button data-act="apin" data-v="0">0</button><button class="fn" data-act="exitadmin">취소</button></div>
@@ -556,10 +575,10 @@ function vAdmin(){
   if(ADMIN.on==='edit')return vEdit();
   const tabs=[['queue','📋 대기열'],['rooms','🏠 룸 현황'],['staff','👥 관리사'],['stats','📊 매출'],['menu','🧾 메뉴 관리']];
   return `<div class="admin">
-    <header style="color:#E6EEF2"><div class="brand" style="color:#F7E4C9">TJ<em style="color:#C9A24B">.</em><small style="color:#9FB1BC">ADMIN</small></div>
+    <header style="color:#2A2016"><div class="brand" style="color:#2A2016">TJ<em style="color:#FF7A59">.</em><small style="color:#7A7266">ADMIN</small></div>
       <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
-        <span style="font-family:var(--f-ui);font-size:14px;color:#9FB1BC">${new Date().toLocaleString('ko-KR',{month:'long',day:'numeric',weekday:'short'})} · <span id="clock2">${hm(new Date())}</span></span>
-        <button class="home" data-act="exitadmin" style="background:#2A3E4A;border-color:#3D5665;color:#E6EEF2">나가기</button>
+        <span style="font-family:var(--f-ui);font-size:14px;color:#7A7266">${new Date().toLocaleString('ko-KR',{month:'long',day:'numeric',weekday:'short'})} · <span id="clock2">${hm(new Date())}</span></span>
+        <button class="home" data-act="exitadmin" style="background:#EFEEEA;border-color:#D9D6CF;color:#2A2016">나가기</button>
       </div></header>
     <div class="admin-tabs">${tabs.map(([k,n])=>`<button class="${ADMIN.tab===k?'on':''}" data-act="atab" data-v="${k}">${n}</button>`).join('')}</div>
     <div class="admin-body">${{queue:vQueue,rooms:vRooms,staff:vStaff,stats:vStats,menu:vMenu}[ADMIN.tab]()}</div>
@@ -569,9 +588,9 @@ function vQueue(){
   const widget=`<div class="wait-widget">
     <div class="wait-block"><span>현재 대기</span><div class="wnum"><button class="aact" data-act="wait" data-k="count" data-v="-1">−</button><b class="num">${WAIT.count}명</b><button class="aact" data-act="wait" data-k="count" data-v="1">+</button></div></div>
     <div class="wait-block"><span>예상 대기시간</span><div class="wnum"><button class="aact" data-act="wait" data-k="minutes" data-v="-5">−5</button><b class="num">${WAIT.minutes}분</b><button class="aact" data-act="wait" data-k="minutes" data-v="5">+5</button></div></div>
-    <div class="wait-block"><span>대기열</span><b class="num" style="color:#C9A24B">${QUEUE.filter(q=>q.status==='대기').length}명</b></div>
+    <div class="wait-block"><span>대기열</span><b class="num" style="color:#FF7A59">${QUEUE.filter(q=>q.status==='대기').length}명</b></div>
   </div>`;
-  if(!QUEUE.length)return widget+`<div class="empty-state"><div style="font-size:48px;margin-bottom:10px">💤</div><p style="color:#9FB1BC">대기열이 비어있어요. 손님이 접수하면 여기에 표시돼요.</p></div>`;
+  if(!QUEUE.length)return widget+`<div class="empty-state"><div style="font-size:48px;margin-bottom:10px">💤</div><p style="color:#7A7266">대기열이 비어있어요. 손님이 접수하면 여기에 표시돼요.</p></div>`;
   return widget+`<div class="cards">${QUEUE.map(q=>`<div class="acard ${q.status==='관리중'?'hot':'warn'}">
     <div class="arow"><span class="ano num">${q.no}</span>
       <div style="display:flex;gap:6px;align-items:center">
@@ -587,17 +606,17 @@ function vQueue(){
 }
 function vRooms(){
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <h2 style="margin:0;color:#9FB1BC">룸 (${ROOMS.length})</h2>
+    <h2 style="margin:0;color:#7A7266">룸 (${ROOMS.length})</h2>
     <button class="aact primary" data-act="newroom">+ 룸 추가</button></div>
   ${ROOMS.length?`<div class="rgrid">${ROOMS.map((r,i)=>`<div class="rbox ${r.guest?'busy':'free'}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="rid">${r.id}</div><div class="rtype">${r.type}</div></div>
     <button class="aact" data-act="delroom" data-i="${i}">삭제</button></div>
     ${r.guest?`<div class="rguest num">${r.guest}</div><div class="runtil">~${r.until}</div>`:'<div class="rfree">비어있음</div>'}
-  </div>`).join('')}</div>`:'<div class="empty-state"><p style="color:#9FB1BC">등록된 룸이 없어요</p></div>'}`;
+  </div>`).join('')}</div>`:'<div class="empty-state"><p style="color:#7A7266">등록된 룸이 없어요</p></div>'}`;
 }
 function vStaff(){
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <h2 style="margin:0;color:#9FB1BC">관리사 (${STAFF.length})</h2>
+    <h2 style="margin:0;color:#7A7266">관리사 (${STAFF.length})</h2>
     <button class="aact primary" data-act="newstaff">+ 관리사 추가</button></div>
   ${STAFF.length?`<div class="cards">${STAFF.map((s,i)=>`<div class="acard">
     <div class="arow"><span class="aname" style="font-size:22px">${s.name}</span>
@@ -607,7 +626,7 @@ function vStaff(){
         <button class="aact" data-act="delstaff" data-i="${i}">삭제</button>
       </div></div>
     <div class="afoot"><span>${s.role} 관리사</span><span>${s.until?'~'+s.until:'배정 가능'}</span></div>
-  </div>`).join('')}</div>`:'<div class="empty-state"><p style="color:#9FB1BC">등록된 관리사가 없어요</p></div>'}`;
+  </div>`).join('')}</div>`:'<div class="empty-state"><p style="color:#7A7266">등록된 관리사가 없어요</p></div>'}`;
 }
 function vMenu(){
   const cs=COURSES.map((c,i)=>{
@@ -618,8 +637,8 @@ function vMenu(){
           <button class="aact" data-act="editcourse" data-v="${c.id}">수정</button>
           <button class="aact" data-act="delcourse" data-v="${c.id}">삭제</button>
         </div></div>
-      <div class="afoot" style="color:#9FB1BC"><span>${c.tag} · ${c.desc}</span></div>
-      <div class="afoot"><span style="color:#F7E4C9" class="num">${ps}</span></div>
+      <div class="afoot" style="color:#7A7266"><span>${c.tag} · ${c.desc}</span></div>
+      <div class="afoot"><span style="color:#2A2016" class="num">${ps}</span></div>
     </div>`;
   }).join('');
   const as=ADDONS.map(a=>`<div class="acard">
@@ -628,25 +647,25 @@ function vMenu(){
           <button class="aact" data-act="editaddon" data-v="${a.id}">수정</button>
           <button class="aact" data-act="deladdon" data-v="${a.id}">삭제</button>
         </div></div>
-      <div class="afoot"><span style="color:#F7E4C9" class="num">+${won(a.price)}</span></div></div>`).join('');
+      <div class="afoot"><span style="color:#2A2016" class="num">+${won(a.price)}</span></div></div>`).join('');
   const chipRow=(list,kind)=>list.map((v,i)=>{const name=Array.isArray(v)?v[0]:v;const emo=Array.isArray(v)?v[1]:'';return `<div class="chip-item">
     <span>${emo} ${name}</span>
     <button class="aact" data-act="editlist" data-k="${kind}" data-i="${i}">수정</button>
     <button class="aact" data-act="dellist" data-k="${kind}" data-i="${i}">×</button></div>`}).join('');
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h2 style="margin:0;color:#9FB1BC">코스 메뉴 (${COURSES.length})</h2>
+      <h2 style="margin:0;color:#7A7266">코스 메뉴 (${COURSES.length})</h2>
       <button class="aact primary" data-act="newcourse">+ 코스 추가</button></div>
     <div class="cards">${cs}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:28px 0 14px">
-      <h2 style="margin:0;color:#9FB1BC">추가 옵션 (${ADDONS.length})</h2>
+      <h2 style="margin:0;color:#7A7266">추가 옵션 (${ADDONS.length})</h2>
       <button class="aact primary" data-act="newaddon">+ 옵션 추가</button></div>
     <div class="cards">${as}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:28px 0 12px">
-      <h2 style="margin:0;color:#9FB1BC">압 세기 선택지 (${PRESSURES.length})</h2>
+      <h2 style="margin:0;color:#7A7266">압 세기 선택지 (${PRESSURES.length})</h2>
       <button class="aact primary" data-act="addlist" data-k="pressures">+ 세기 추가</button></div>
     <div class="chip-list">${chipRow(PRESSURES,'pressures')}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:28px 0 12px">
-      <h2 style="margin:0;color:#9FB1BC">집중 부위 선택지 (${FOCUS.length})</h2>
+      <h2 style="margin:0;color:#7A7266">집중 부위 선택지 (${FOCUS.length})</h2>
       <button class="aact primary" data-act="addlist" data-k="focuses">+ 부위 추가</button></div>
     <div class="chip-list">${chipRow(FOCUS,'focuses')}</div>`;
 }
@@ -654,30 +673,30 @@ function vEdit(){
   const E=ADMIN.edit;const isC=E.kind==='course';
   const emos=isC?['🧘‍♀️','🌿','💪','🦶','💆‍♀️','🪨','💦','🌸','🧖‍♀️','✨']:['🛀','✨','👁','🍵','🪨','🌸','🫖','🧴'];
   return `<div class="admin">
-    <header style="color:#E6EEF2"><div class="brand" style="color:#F7E4C9">${isC?'코스':'옵션'} ${E.isNew?'추가':'수정'}</div>
-    <button class="home" data-act="canceledit" style="margin-left:auto;background:#2A3E4A;border-color:#3D5665;color:#E6EEF2">취소</button></header>
+    <header style="color:#2A2016"><div class="brand" style="color:#2A2016">${isC?'코스':'옵션'} ${E.isNew?'추가':'수정'}</div>
+    <button class="home" data-act="canceledit" style="margin-left:auto;background:#EFEEEA;border-color:#D9D6CF;color:#2A2016">취소</button></header>
     <div style="max-width:620px;margin:20px auto 0;display:flex;flex-direction:column;gap:20px">
-      <div><h2 style="margin:0 0 10px;color:#9FB1BC">이모지</h2>
+      <div><h2 style="margin:0 0 10px;color:#7A7266">이모지</h2>
         <div class="row">${emos.map(e=>`<button class="opt ${E.emo===e?'sel':''}" data-act="setedit" data-k="emo" data-v="${e}" style="min-height:56px;min-width:56px;font-size:28px;padding:0 16px">${e}</button>`).join('')}</div></div>
-      <div><h2 style="margin:0 0 10px;color:#9FB1BC">이름</h2>
+      <div><h2 style="margin:0 0 10px;color:#7A7266">이름</h2>
         <input class="einput" id="e-name" value="${E.name.replace(/"/g,'&quot;')}" placeholder="예: 아로마 오일"></div>
       ${isC?`
-      <div><h2 style="margin:0 0 10px;color:#9FB1BC">분류</h2>
+      <div><h2 style="margin:0 0 10px;color:#7A7266">분류</h2>
         <div class="row">${['건식','오일'].map(t=>`<button class="opt ${E.tag===t?'sel':''}" data-act="setedit" data-k="tag" data-v="${t}">${t}</button>`).join('')}</div></div>
-      <div><h2 style="margin:0 0 10px;color:#9FB1BC">설명</h2>
+      <div><h2 style="margin:0 0 10px;color:#7A7266">설명</h2>
         <input class="einput" id="e-desc" value="${E.desc.replace(/"/g,'&quot;')}" placeholder="예: 뭉친 근육을 깊~게 풀어드려요"></div>
-      <div><h2 style="margin:0 0 10px;color:#9FB1BC">시간 · 가격 (분당 요금 설정)</h2>
+      <div><h2 style="margin:0 0 10px;color:#7A7266">시간 · 가격 (분당 요금 설정)</h2>
         <div style="display:flex;flex-direction:column;gap:8px" id="price-rows">
         ${E.pricesArr.map((row,i)=>`<div style="display:flex;gap:8px;align-items:center">
           <input class="einput" style="width:120px" type="number" value="${row[0]}" data-act="pedit" data-k="min" data-i="${i}" placeholder="분">
-          <span style="color:#9FB1BC">분</span>
+          <span style="color:#7A7266">분</span>
           <input class="einput" style="flex:1" type="number" value="${row[1]}" data-act="pedit" data-k="price" data-i="${i}" placeholder="가격">
-          <span style="color:#9FB1BC">원</span>
+          <span style="color:#7A7266">원</span>
           <button class="aact" data-act="prow" data-v="del:${i}">−</button>
         </div>`).join('')}</div>
         <button class="aact" data-act="prow" data-v="add" style="margin-top:10px">+ 시간대 추가</button></div>
       `:`
-      <div><h2 style="margin:0 0 10px;color:#9FB1BC">가격 (원)</h2>
+      <div><h2 style="margin:0 0 10px;color:#7A7266">가격 (원)</h2>
         <input class="einput" id="e-price" type="number" value="${E.price}" placeholder="예: 15000"></div>
       `}
       <div style="display:flex;gap:10px;margin-top:12px">
@@ -696,8 +715,8 @@ function vStats(){
     <div class="kpi"><span>접수 건수</span><b class="num">${STATS.orders}건</b></div>
     <div class="kpi"><span>평균 객단가</span><b class="num">${won(avg)}</b></div>
   </div>
-  <h2 style="color:#E6EEF2">인기 코스 TOP 5</h2>
-  ${pop.length?`<div class="bars">${pop.map(([n,v])=>`<div class="bar"><span>${n}</span><div class="btrack"><div class="bfill" style="width:${v/max*100}%"></div></div><b class="num">${v}</b></div>`).join('')}</div>`:'<p style="color:#9FB1BC;text-align:center;padding:40px 0">아직 접수된 코스가 없어요</p>'}
+  <h2 style="color:#2A2016">인기 코스 TOP 5</h2>
+  ${pop.length?`<div class="bars">${pop.map(([n,v])=>`<div class="bar"><span>${n}</span><div class="btrack"><div class="bfill" style="width:${v/max*100}%"></div></div><b class="num">${v}</b></div>`).join('')}</div>`:'<p style="color:#7A7266;text-align:center;padding:40px 0">아직 접수된 코스가 없어요</p>'}
   <div style="margin-top:28px;display:flex;justify-content:flex-end"><button class="aact" data-act="resetstats">매출 초기화</button></div>`;
 }
 
@@ -758,6 +777,11 @@ document.addEventListener('click',e=>{
   const a=t.dataset.act,v=t.dataset.v;
   switch(a){
     case 'noop':return;
+    case 'syncsettings':ADMIN.syncOpen=true;break;
+    case 'closesync':ADMIN.syncOpen=false;break;
+    case 'synccopy':{const txt=location.origin+location.pathname+'#bin='+BIN_ID;try{navigator.clipboard.writeText(txt).then(()=>{ADMIN.toast='URL 복사됨! 다른 아이패드에 붙여넣으세요';render()}).catch(()=>{ADMIN.toast='복사 실패 — 직접 입력하세요';render()})}catch(e){ADMIN.toast='복사 실패';render()}return}
+    case 'syncnew':{BIN_ID='';localStorage.removeItem('TJ_BIN');history.replaceState(null,'',location.pathname);ensureBin().then(()=>{syncRead();render()});ADMIN.toast='새 저장소 만드는 중...';break}
+    case 'syncsave':{const inp=document.getElementById('binid-input');const id=(inp?inp.value:'').trim();if(!id){ADMIN.toast='ID를 입력하세요';break}BIN_ID=id;localStorage.setItem('TJ_BIN',id);location.hash='bin='+id;lastSync='';syncRead();ADMIN.syncOpen=false;ADMIN.toast='저장소 연결됨';break}
     case 'apin':if(ADMIN.pin.length<4)ADMIN.pin+=v;if(ADMIN.pin.length===4){if(ADMIN.pin==='0517'){ADMIN.on=true;ADMIN.pin=''}else{ADMIN.pin='';render();ADMIN.toast='비밀번호가 틀렸어요';return}}break;
     case 'apinclr':ADMIN.pin='';break;
     case 'exitadmin':ADMIN.on=false;ADMIN.pin='';break;
@@ -863,7 +887,7 @@ function finish(){
 }
 
 let adminTicks=0,toastT=null;
-setInterval(()=>{if(ADMIN.toast&&!toastT){toastT=setTimeout(()=>{ADMIN.toast='';toastT=null;if(ADMIN.on)render()},2500)}},300);
+setInterval(()=>{if(ADMIN.toast&&!toastT){toastT=setTimeout(()=>{ADMIN.toast='';toastT=null;if(ADMIN.on||S.step===0)render()},2500)}},300);
 setInterval(()=>{
   const ck=document.getElementById('clock');if(ck)ck.textContent=hm(new Date());
   const ck2=document.getElementById('clock2');if(ck2)ck2.textContent=hm(new Date());
@@ -871,7 +895,8 @@ setInterval(()=>{
   adminTicks=0;
   if(ADMIN.on)return;
   if(S.step===6){doneLeft--;if(doneLeft<=0){fresh()}render();return}
-  if(S.step===0||S.processing)return;
+  if(S.step===0){if(!ADMIN.syncOpen){adminTicks++;if(adminTicks>=5){adminTicks=0;render()}}return}
+  if(S.processing)return;
   idleT++;
   if(!idleWarn&&idleT>=IDLE_SEC){idleWarn=true;warnLeft=IDLE_WARN;render();return}
   if(idleWarn){warnLeft--;if(warnLeft<=0){idleWarn=false;fresh()}render()}
