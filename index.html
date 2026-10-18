@@ -332,7 +332,10 @@ let WAIT={count:0,minutes:0};
 /* ======== JSONBin 공유 저장소 (아이패드 간 동기화) ======== */
 const JSONBIN_KEY='$2a$10$kPfpaCosO2VwEaMbtcU2.epyapqZEw7w0NK8TZeNmRhL.trmnejK6';
 const DEFAULT_BIN='6ad47618ac6210605a3b7828'; /* 매장 공용 저장소 (공개 bin: 읽기는 키 없이) */
-let BIN_ID=(location.hash.match(/bin=([a-zA-Z0-9]+)/)||[])[1]||localStorage.getItem('TJ_BIN')||DEFAULT_BIN;
+const validBin=v=>/^[a-f0-9]{24}$/i.test(v||'');
+let BIN_ID=(location.hash.match(/bin=([a-zA-Z0-9]+)/)||[])[1]||'';
+if(!validBin(BIN_ID))BIN_ID=localStorage.getItem('TJ_BIN')||'';
+if(!validBin(BIN_ID)){try{localStorage.removeItem('TJ_BIN')}catch(e){}BIN_ID=DEFAULT_BIN}
 let lastSync='',syncT=null,ticketNo=100;
 async function ensureBin(){
   if(BIN_ID)return;
@@ -452,7 +455,7 @@ function vAttract(){
       <button class="go" data-act="start">터치하여 시작 <b>👉</b></button>
       <div class="meta"><span>🕙 10:00 - 02:00</span><span>⏱ ${WAIT.count>0?'대기 '+WAIT.count+'명 · 약 '+WAIT.minutes+'분':'대기 없음'}</span><span>🪑 ${ROOMS.filter(r=>!r.guest).length}자리 비어있음</span></div>
     </div>
-    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v6</button>
+    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v7</button>
   </div>${vSyncModal()}`;
 }
 function vSyncModal(){
@@ -461,11 +464,12 @@ function vSyncModal(){
     <h3 class="mtitle" style="color:#2A2016">저장소 연결 설정</h3>
     <p style="margin:0;font-size:14px;color:#8A7A62;font-family:var(--f-ui)">두 아이패드가 <b>같은 ID</b>를 쓰면 주문이 공유돼요.</p>
     <label class="mlbl" style="color:#8A7A62">현재 저장소 ID</label>
-    <input class="einput" data-mk="binid" id="binid-input" value="${BIN_ID}" placeholder="비어있으면 자동 생성됨" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">
+    <input class="einput" data-mk="binid" id="binid-input" value="${BIN_ID}" placeholder="24자리 ID (비우면 기본 저장소)" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
       <button class="aact" data-act="synccopy" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">📋 ID 복사</button>
       <button class="aact" data-act="syncnew" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">🆕 새로 만들기</button>
       <button class="aact" data-act="syncdiag" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">🩺 연결 진단</button>
+      <button class="aact" data-act="syncdefault" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">↩️ 기본 저장소로</button>
     </div>
     <pre id="diag-out" style="margin:0;white-space:pre-wrap;font-size:12px;color:#2A2016;background:#F7F7F5;padding:10px;border-radius:8px;min-height:40px;font-family:var(--f-ui)">${ADMIN.diag||('마지막 오류: '+(lastErr||'없음'))}</pre>
     <div class="mbtns"><button class="aact" data-act="closesync" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">닫기</button><button class="aact primary" data-act="syncsave" style="background:#FF7A59;border-color:#FF7A59;color:#fff">이 ID로 연결</button></div>
@@ -815,6 +819,7 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'noop':return;
     case 'syncsettings':ADMIN.syncOpen=true;ADMIN.diag='';break;
+    case 'syncdefault':{BIN_ID=DEFAULT_BIN;try{localStorage.removeItem('TJ_BIN')}catch(e){}history.replaceState(null,'',location.pathname+location.search);lastSync='';lastErr='';syncRead();ADMIN.syncOpen=false;ADMIN.toast='기본 저장소로 연결됨';break}
     case 'syncdiag':{ADMIN.diag='진단 중...';render();(async()=>{const L=[];const T=async(name,fn)=>{try{const r=await fn();L.push(name+': '+r)}catch(e){L.push(name+': 실패 — '+(e.message||e))}};
       await T('1) 사이트 접속',async()=>{const r=await fetch(location.href.split('#')[0],{cache:'no-store'});return r.status});
       await T('2) jsonbin 읽기(키 없음)',async()=>{const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{cache:'no-store'});return r.status});
@@ -824,7 +829,7 @@ document.addEventListener('click',e=>{
     case 'closesync':ADMIN.syncOpen=false;break;
     case 'synccopy':{const txt=location.origin+location.pathname+'#bin='+BIN_ID;try{navigator.clipboard.writeText(txt).then(()=>{ADMIN.toast='URL 복사됨! 다른 아이패드에 붙여넣으세요';render()}).catch(()=>{ADMIN.toast='복사 실패 — 직접 입력하세요';render()})}catch(e){ADMIN.toast='복사 실패';render()}return}
     case 'syncnew':{BIN_ID='';localStorage.removeItem('TJ_BIN');history.replaceState(null,'',location.pathname);ensureBin().then(()=>{syncRead();render()});ADMIN.toast='새 저장소 만드는 중...';break}
-    case 'syncsave':{const inp=document.getElementById('binid-input');const id=(inp?inp.value:'').trim();if(!id){ADMIN.toast='ID를 입력하세요';break}BIN_ID=id;localStorage.setItem('TJ_BIN',id);location.hash='bin='+id;lastSync='';syncRead();ADMIN.syncOpen=false;ADMIN.toast='저장소 연결됨';break}
+    case 'syncsave':{const inp=document.getElementById('binid-input');const id=(inp?inp.value:'').trim();if(!validBin(id)){ADMIN.toast='저장소 ID는 24자리 영문·숫자여야 해요 (예: 6ad47618ac6210605a3b7828)';break}BIN_ID=id;localStorage.setItem('TJ_BIN',id);location.hash='bin='+id;lastSync='';syncRead();ADMIN.syncOpen=false;ADMIN.toast='저장소 연결됨';break}
     case 'apin':if(ADMIN.pin.length<4)ADMIN.pin+=v;if(ADMIN.pin.length===4){if(ADMIN.pin==='0517'){ADMIN.on=true;ADMIN.pin=''}else{ADMIN.pin='';render();ADMIN.toast='비밀번호가 틀렸어요';return}}break;
     case 'apinclr':ADMIN.pin='';break;
     case 'exitadmin':ADMIN.on=false;ADMIN.pin='';break;
