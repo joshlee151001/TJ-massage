@@ -168,7 +168,9 @@ h2 .q{color:var(--muted);font-size:16px;font-family:var(--f-ui);font-weight:400;
 .dock .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #E65A3C}
 .dock .btn:disabled{background:var(--line);color:var(--muted);box-shadow:0 4px 0 #D9CCB0;cursor:not-allowed}
 .dock .back{height:68px;width:68px;border-radius:20px;background:var(--bg);border:2px solid var(--line);font-size:28px}
-.dock .expand{position:absolute;inset:0;top:0;background:transparent}
+.dock .expand{position:absolute;inset:0;top:0;background:transparent;z-index:0}
+.dock .handle{z-index:1}
+.dock .bar{position:relative;z-index:2}
 
 .sheet{position:fixed;inset:0;z-index:8;display:flex;align-items:flex-end;justify-content:center;background:rgba(42,32,22,.5);opacity:0;pointer-events:none;transition:opacity .2s}
 .sheet.open{opacity:1;pointer-events:auto}
@@ -650,7 +652,7 @@ function vStats(){
 function vModal(){
   if(!ADMIN.form)return ADMIN.toast?`<div class="toast" data-act="closetoast">${ADMIN.toast}</div>`:'';
   const F=ADMIN.form;const emoNeeded=F.kind!=='newstaff'&&F.kind!=='newroom'&&F.subk!=='pressures';
-  return `<div class="mbg" data-act="cancelform"><div class="mbox" onclick="event.stopPropagation()">
+  return `<div class="mbg" data-act="cancelform"><div class="mbox" data-act="noop">
     <h3 class="mtitle">${F.title}</h3>
     <label class="mlbl">이름</label>
     <input class="einput" data-mk="name" value="${(F.name||'').replace(/"/g,'&quot;')}" placeholder="이름 입력" autofocus>
@@ -702,6 +704,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t||t.disabled)return;
   const a=t.dataset.act,v=t.dataset.v;
   switch(a){
+    case 'noop':return;
     case 'apin':if(ADMIN.pin.length<4)ADMIN.pin+=v;if(ADMIN.pin.length===4){if(ADMIN.pin==='0517'){ADMIN.on=true;ADMIN.pin=''}else{ADMIN.pin='';render();ADMIN.toast='비밀번호가 틀렸어요';return}}break;
     case 'apinclr':ADMIN.pin='';break;
     case 'exitadmin':ADMIN.on=false;ADMIN.pin='';break;
