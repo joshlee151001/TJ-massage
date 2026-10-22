@@ -310,9 +310,9 @@ let ADDONS=[
   {id:'secret',emo:'🤫',name:'비밀 봉인',price:500},
   {id:'wax',emo:'🎀',name:'왁스 실링',price:400}
 ];
-let FOCUS=[['목·어깨','😣'],['등','🫠'],['허리','🥲'],['팔','💪'],['다리','🦵'],['발','🦶']];
+let FOCUS=[['엄마','👩'],['아빠','👨'],['오빠','👦'],['여동생','👧'],['할머니','👵'],['할아버지','👴']];
 let PRESSURES=['느긋이','보통','급행'];
-const STEPS=['코스','옵션','시간','정보','결제'];
+const STEPS=['우편','옵션','배달','비번','결제'];
 const IDLE_SEC=60,IDLE_WARN=15;
 
 let S,idleT=0,idleWarn=false,warnLeft=IDLE_WARN,doneLeft=0,sheetOpen=false;
@@ -329,28 +329,19 @@ let STAFF=[];
 let STATS={revenue:0,orders:0};
 let WAIT={count:0,minutes:0};
 
-/* ======== JSONBin 공유 저장소 (아이패드 간 동기화) ======== */
-const JSONBIN_KEY='$2a$10$kPfpaCosO2VwEaMbtcU2.epyapqZEw7w0NK8TZeNmRhL.trmnejK6';
-const DEFAULT_BIN='';
-const validBin=v=>/^[a-f0-9]{24}$/i.test(v||'');
-let BIN_ID=(location.hash.match(/bin=([a-zA-Z0-9]+)/)||[])[1]||'';
-if(!validBin(BIN_ID))BIN_ID=localStorage.getItem('TJ_BIN')||'';
-if(!validBin(BIN_ID)){try{localStorage.removeItem('TJ_BIN')}catch(e){}BIN_ID=DEFAULT_BIN}
-let lastSync='',syncT=null,ticketNo=100;
-async function ensureBin(){
-  if(BIN_ID)return;
-  try{
-    const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Name':'TJ-massage','X-Bin-Private':'false'},body:JSON.stringify({STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo})});
-    const d=await r.json();if(!d.metadata){ADMIN.toast='저장소 할당량 소진 — 로컬 모드로 작동';BIN_ID='';return}
-    BIN_ID=d.metadata.id;
-    localStorage.setItem('TJ_BIN',BIN_ID);
-    location.hash='bin='+BIN_ID;
-    ADMIN.toast='저장소 생성 완료 — URL을 다른 아이패드에서도 그대로 여세요';
-    render();
-  }catch(e){console.warn('bin create',e);ADMIN.toast='저장소 없음 — 로컬 모드로 작동 (혼자서만 저장)';BIN_ID=''}
+/* ======== Firebase 공유 저장소 (아이패드 간 동기화) ======== */
+const FB_URL='https://tj-massage-default-rtdb.asia-southeast1.firebasedatabase.app';
+const DB_PATH='tjpost';
+let BIN_ID=DB_PATH; /* 연결 표시용 */
+let lastSync='',syncT=null,ticketNo=100,lastErr='';
+async function putRemote(bodyStr){
+  /* 배열·숫자키가 Firebase에서 변형되지 않도록 통째로 문자열로 저장 */
+  return fetch(`${FB_URL}/${DB_PATH}.json`,{method:'PUT',body:JSON.stringify(bodyStr)});
 }
-const GET_H={'X-Master-Key':JSONBIN_KEY};
-const PUT_H={'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY};
+async function ensureBin(){
+  try{const rec=await fetchRemote();if(!rec){const r=await putRemote(JSON.stringify(snapshot()));if(!r.ok)throw new Error('초기화 '+r.status)}lastErr=''}
+  catch(e){lastErr=String(e&&e.message||e);ADMIN.toast='⚠️ 저장소 연결 실패: '+lastErr}
+}
 function snapshot(){return {STAFF,ROOMS,WAIT,STATS,COURSES,ADDONS,PRESSURES,FOCUS,QUEUE,ticketNo}}
 function applyRecord(rec){
   if(!rec)return;
@@ -359,39 +350,39 @@ function applyRecord(rec){
   if(rec.QUEUE)QUEUE=rec.QUEUE;if(rec.ticketNo)ticketNo=Math.max(ticketNo,rec.ticketNo);
 }
 async function fetchRemote(){
-  let r;try{r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{cache:'no-store'})}catch(e){throw new Error('네트워크: '+(e.message||e))};
-  if(r.status===401)r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{headers:GET_H,cache:'no-store'});
-  if(r.status===403){BIN_ID='';localStorage.removeItem('TJ_BIN');throw new Error('저장소 할당량 소진 — 로컬 모드로 전환됨 (내일 리셋 또는 유료 플랜 필요)')}
-  if(r.status===400){localStorage.removeItem('TJ_BIN');throw new Error('저장소 ID가 잘못됨 — 로컬 모드로 전환')}
-  if(!r.ok)throw new Error('GET '+r.status+' '+(await r.text()).slice(0,80));
-  const j=await r.json();return j.record||null;
+  let r;try{r=await fetch(`${FB_URL}/${DB_PATH}.json?t=${Date.now()}`,{cache:'no-store'})}catch(e){throw new Error('네트워크: '+(e.message||e))}
+  if(r.status===401||r.status===403)throw new Error('권한 없음 — Firebase 규칙 확인 ('+r.status+')');
+  if(!r.ok)throw new Error('GET '+r.status);
+  const j=await r.json();if(j==null)return null;
+  return typeof j==='string'?JSON.parse(j):j;
 }
 async function syncRead(){
   if(!BIN_ID||syncBusy)return;
   try{
-    const rec=await fetchRemote();if(!rec)return;
+    const rec=await fetchRemote();lastErr='';if(!rec)return;
     const sig=JSON.stringify(rec);if(sig===lastSync)return;lastSync=sig;
     applyRecord(rec);
     if(ADMIN.on&&!ADMIN.form&&!ADMIN.edit)render();else if(S.step===0||S.step===6)render();
-  }catch(e){console.warn('sync read',e)}
+  }catch(e){lastErr=String(e&&e.message||e);console.warn('sync read',e)}
 }
 /* 읽기-수정-쓰기: 원격 최신본에 변경을 적용해서 저장 (덮어쓰기 방지) */
-let syncBusy=false,syncQ=[],lastErr='';
+let syncBusy=false,syncQ=[];
 async function withRemote(mut){
   if(!BIN_ID){const rec=snapshot();mut(rec);applyRecord(rec);return}
   syncQ.push(mut);if(syncBusy)return;syncBusy=true;
   try{
     while(syncQ.length){
-      let rec=null;
-      for(let i=0;i<4&&!rec;i++){try{rec=await fetchRemote()}catch(e){lastErr=String(e&&e.message||e);await new Promise(r=>setTimeout(r,700*(i+1)))}}
-      if(!rec){ADMIN.toast='⚠️ 저장소 읽기 실패: '+lastErr;syncQ.length=0;break}
+      let rec=null,got=false;
+      for(let i=0;i<4&&!got;i++){try{rec=await fetchRemote();got=true}catch(e){lastErr=String(e&&e.message||e);await new Promise(r=>setTimeout(r,700*(i+1)))}}
+      if(!got){ADMIN.toast='⚠️ 저장소 읽기 실패: '+lastErr;syncQ.length=0;break}
+      if(!rec)rec=snapshot();
       ['STAFF','ROOMS','WAIT','STATS','COURSES','ADDONS','PRESSURES','FOCUS','QUEUE'].forEach(k=>{if(rec[k]==null)rec[k]=snapshot()[k]});
       if(!rec.ticketNo)rec.ticketNo=ticketNo;
       const batch=syncQ.splice(0);batch.forEach(m=>m(rec));
       applyRecord(rec);
       const body=JSON.stringify(rec);
-      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:'PUT',headers:PUT_H,body});
-      if(r.status===403){lastErr='할당량 소진';ADMIN.toast='⚠️ 저장소 할당량 소진 — 로컬에만 저장됨';BIN_ID=''}else if(!r.ok){lastErr='PUT '+r.status;ADMIN.toast='⚠️ 저장소 쓰기 실패('+r.status+')'}else{lastErr='';lastSync=body}
+      const r=await putRemote(body);
+      if(!r.ok){lastErr='PUT '+r.status;ADMIN.toast='⚠️ 저장소 쓰기 실패('+r.status+') — Firebase 규칙 확인'}else{lastErr='';lastSync=body}
     }
   }catch(e){lastErr=String(e&&e.message||e);ADMIN.toast='⚠️ 저장소 오류: '+lastErr}
   finally{syncBusy=false;render()}
@@ -410,7 +401,7 @@ function syncAll(){syncConfig()}
 function syncOrder(){}
 function unsyncOrder(){}
 let pollTick=0;
-ensureBin().then(()=>{syncRead();setInterval(()=>{pollTick++;if(ADMIN.on===true){if(pollTick%5===0)syncRead()}else if(S.step===0){if(pollTick%30===0)syncRead()}},1000)});
+ensureBin().then(()=>{syncRead();setInterval(()=>{pollTick++;if(ADMIN.on===true){if(pollTick%3===0)syncRead()}else if(S.step===0){if(pollTick%10===0)syncRead()}},1000)});
 
 function fresh(){S={step:0,course:null,dur:null,pressure:'보통',focus:[],addons:[],people:1,time:null,phone:'',health:[],consent:false,pay:null,processing:false,ticket:null};sheetOpen=false;ADMIN.on=false;ADMIN.pin='';ADMIN.tab='queue'}
 fresh();
@@ -457,24 +448,16 @@ function vAttract(){
       <button class="go" data-act="start">터치하여 시작 ⚡</button>
       <div class="meta"><span>🕙 10:00 - 02:00</span><span>⏱ ${WAIT.count>0?'대기 '+WAIT.count+'명 · 약 '+WAIT.minutes+'분':'대기 없음'}</span><span>📬 ${ROOMS.length}곳 배달 가능</span></div>
     </div>
-    <button class="sync-badge ${BIN_ID?'ok':'bad'}" data-act="syncsettings">${BIN_ID?'🟢 연결됨 '+BIN_ID.slice(-6):'🔴 저장소 미연결 · 탭하여 설정'} · v3 orange</button>
+    <button class="sync-badge ${lastErr?'bad':'ok'}" data-act="syncsettings">${lastErr?'🔴 연결 오류 · 탭하여 진단':'🟢 Firebase 연결됨'} · v4</button>
   </div>${vSyncModal()}`;
 }
 function vSyncModal(){
   if(!ADMIN.syncOpen)return ADMIN.toast?`<div class="toast" data-act="closetoast">${ADMIN.toast}</div>`:'';
   return `<div class="mbg" data-act="closesync"><div class="mbox" data-act="noop" style="background:#fff;border-color:#eee">
-    <h3 class="mtitle" style="color:#2A2016">저장소 연결 설정</h3>
-    <p style="margin:0;font-size:14px;color:#8A7A62;font-family:var(--f-ui)">두 아이패드가 <b>같은 ID</b>를 쓰면 주문이 공유돼요.</p>
-    <label class="mlbl" style="color:#8A7A62">현재 저장소 ID</label>
-    <input class="einput" data-mk="binid" id="binid-input" value="${BIN_ID}" placeholder="24자리 ID (비우면 기본 저장소)" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-      <button class="aact" data-act="synccopy" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">📋 ID 복사</button>
-      <button class="aact" data-act="syncnew" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">🆕 새로 만들기</button>
-      <button class="aact" data-act="syncdiag" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">🩺 연결 진단</button>
-      <button class="aact" data-act="syncdefault" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">↩️ 기본 저장소로</button>
-    </div>
-    <pre id="diag-out" style="margin:0;white-space:pre-wrap;font-size:12px;color:#2A2016;background:#F7F7F5;padding:10px;border-radius:8px;min-height:40px;font-family:var(--f-ui)">${ADMIN.diag||('마지막 오류: '+(lastErr||'없음'))}</pre>
-    <div class="mbtns"><button class="aact" data-act="closesync" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">닫기</button><button class="aact primary" data-act="syncsave" style="background:#FFA64D;border-color:#FFA64D;color:#fff">이 ID로 연결</button></div>
+    <h3 class="mtitle" style="color:#2A2016">저장소 연결 상태</h3>
+    <p style="margin:0;font-size:14px;color:#8A7A62;font-family:var(--f-ui)">두 아이패드가 같은 주소로 열면 자동으로 주문이 공유돼요. 설정할 건 없어요.</p>
+    <pre style="margin:0;white-space:pre-wrap;font-size:12px;color:#2A2016;background:#F7F7F5;padding:10px;border-radius:8px;min-height:40px;font-family:var(--f-ui)">${ADMIN.diag||('상태: '+(lastErr?'오류 — '+lastErr:'정상'))}</pre>
+    <div class="mbtns"><button class="aact" data-act="closesync" style="background:#FFF4E3;color:#2A2016;border-color:#F0E3C8">닫기</button><button class="aact primary" data-act="syncdiag" style="background:#FFA64D;border-color:#FFA64D;color:#fff">🩺 연결 진단</button></div>
   </div></div>${ADMIN.toast?`<div class="toast" data-act="closetoast">${ADMIN.toast}</div>`:''}`;
 }
 
@@ -684,19 +667,19 @@ function vMenu(){
     <button class="aact" data-act="editlist" data-k="${kind}" data-i="${i}">수정</button>
     <button class="aact" data-act="dellist" data-k="${kind}" data-i="${i}">×</button></div>`}).join('');
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h2 style="margin:0;color:#7A7266">코스 메뉴 (${COURSES.length})</h2>
+      <h2 style="margin:0;color:#7A7266">우편 종류 (${COURSES.length})</h2>
       <button class="aact primary" data-act="newcourse">+ 우편 추가</button></div>
     <div class="cards">${cs}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:28px 0 14px">
-      <h2 style="margin:0;color:#7A7266">추가 옵션 (${ADDONS.length})</h2>
+      <h2 style="margin:0;color:#7A7266">부가 서비스 (${ADDONS.length})</h2>
       <button class="aact primary" data-act="newaddon">+ 서비스 추가</button></div>
     <div class="cards">${as}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:28px 0 12px">
-      <h2 style="margin:0;color:#7A7266">압 세기 선택지 (${PRESSURES.length})</h2>
+      <h2 style="margin:0;color:#7A7266">배달 속도 선택지 (${PRESSURES.length})</h2>
       <button class="aact primary" data-act="addlist" data-k="pressures">+ 속도 추가</button></div>
     <div class="chip-list">${chipRow(PRESSURES,'pressures')}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:28px 0 12px">
-      <h2 style="margin:0;color:#7A7266">집중 부위 선택지 (${FOCUS.length})</h2>
+      <h2 style="margin:0;color:#7A7266">받는 사람 명단 (${FOCUS.length})</h2>
       <button class="aact primary" data-act="addlist" data-k="focuses">+ 사람 추가</button></div>
     <div class="chip-list">${chipRow(FOCUS,'focuses')}</div>`;
 }
@@ -704,7 +687,7 @@ function vEdit(){
   const E=ADMIN.edit;const isC=E.kind==='course';
   const emos=isC?['💌','📨','📦','⚡','🎨','💝','✉️','📮','🎁','📬']:['📍','📸','🤫','🎀','🏷️','💰','🖋️','📑'];
   return `<div class="admin">
-    <header style="color:#2A2016"><div class="brand" style="color:#2A2016">${isC?'코스':'옵션'} ${E.isNew?'추가':'수정'}</div>
+    <header style="color:#2A2016"><div class="brand" style="color:#2A2016">${isC?'우편 종류':'부가 서비스'} ${E.isNew?'추가':'수정'}</div>
     <button class="home" data-act="canceledit" style="margin-left:auto;background:#EFEEEA;border-color:#D9D6CF;color:#2A2016">취소</button></header>
     <div style="max-width:620px;margin:20px auto 0;display:flex;flex-direction:column;gap:20px">
       <div><h2 style="margin:0 0 10px;color:#7A7266">이모지</h2>
@@ -716,11 +699,11 @@ function vEdit(){
         <div class="row">${['보통','사인','물건','빠름','아이용','프리미엄'].map(t=>`<button class="opt ${E.tag===t?'sel':''}" data-act="setedit" data-k="tag" data-v="${t}">${t}</button>`).join('')}</div></div>
       <div><h2 style="margin:0 0 10px;color:#7A7266">설명</h2>
         <input class="einput" id="e-desc" value="${E.desc.replace(/"/g,'&quot;')}" placeholder="예: 당일 안에 배달되는 기본 편지"></div>
-      <div><h2 style="margin:0 0 10px;color:#7A7266">시간 · 가격 (분당 요금 설정)</h2>
+      <div><h2 style="margin:0 0 10px;color:#7A7266">통수 · 가격</h2>
         <div style="display:flex;flex-direction:column;gap:8px" id="price-rows">
         ${E.pricesArr.map((row,i)=>`<div style="display:flex;gap:8px;align-items:center">
           <input class="einput" style="width:120px" type="number" value="${row[0]}" data-act="pedit" data-k="min" data-i="${i}" placeholder="통">
-          <span style="color:#7A7266">분</span>
+          <span style="color:#7A7266">통</span>
           <input class="einput" style="flex:1" type="number" value="${row[1]}" data-act="pedit" data-k="price" data-i="${i}" placeholder="가격">
           <span style="color:#7A7266">원</span>
           <button class="aact" data-act="prow" data-v="del:${i}">−</button>
@@ -746,8 +729,8 @@ function vStats(){
     <div class="kpi"><span>접수 건수</span><b class="num">${STATS.orders}건</b></div>
     <div class="kpi"><span>평균 객단가</span><b class="num">${won(avg)}</b></div>
   </div>
-  <h2 style="color:#2A2016">인기 코스 TOP 5</h2>
-  ${pop.length?`<div class="bars">${pop.map(([n,v])=>`<div class="bar"><span>${n}</span><div class="btrack"><div class="bfill" style="width:${v/max*100}%"></div></div><b class="num">${v}</b></div>`).join('')}</div>`:'<p style="color:#7A7266;text-align:center;padding:40px 0">아직 접수된 코스가 없어요</p>'}
+  <h2 style="color:#2A2016">많이 보낸 우편 TOP 5</h2>
+  ${pop.length?`<div class="bars">${pop.map(([n,v])=>`<div class="bar"><span>${n}</span><div class="btrack"><div class="bfill" style="width:${v/max*100}%"></div></div><b class="num">${v}</b></div>`).join('')}</div>`:'<p style="color:#7A7266;text-align:center;padding:40px 0">아직 접수된 우편이 없어요</p>'}
   <div style="margin-top:28px;display:flex;justify-content:flex-end"><button class="aact" data-act="resetstats">매출 초기화</button></div>`;
 }
 
@@ -821,17 +804,12 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'noop':return;
     case 'syncsettings':ADMIN.syncOpen=true;ADMIN.diag='';break;
-    case 'syncdefault':{BIN_ID=DEFAULT_BIN;try{localStorage.removeItem('TJ_BIN')}catch(e){}history.replaceState(null,'',location.pathname+location.search);lastSync='';lastErr='';syncRead();ADMIN.syncOpen=false;ADMIN.toast='기본 저장소로 연결됨';break}
-    case 'syncdiag':{ADMIN.diag='진단 중...';render();(async()=>{const L=[];const T=async(name,fn)=>{try{const r=await fn();L.push(name+': '+r)}catch(e){L.push(name+': 실패 — '+(e.message||e))}};
-      await T('1) 사이트 접속',async()=>{const r=await fetch(location.href.split('#')[0],{cache:'no-store'});return r.status});
-      await T('2) jsonbin 읽기(키 없음)',async()=>{const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{cache:'no-store'});return r.status});
-      await T('3) jsonbin 읽기(키 있음)',async()=>{const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`,{headers:GET_H,cache:'no-store'});return r.status});
-      await T('4) jsonbin 쓰기',async()=>{const rec=await fetchRemote();const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:'PUT',headers:PUT_H,body:JSON.stringify(rec)});return r.status});
-      L.push('bin: '+BIN_ID+' · '+navigator.userAgent.slice(0,60));ADMIN.diag=L.join('\n');render()})();return}
+    case 'syncdiag':{ADMIN.diag='진단 중...';render();(async()=>{const L=[];const T=async(name,fn)=>{try{L.push(name+': '+(await fn()))}catch(e){L.push(name+': 실패 — '+(e.message||e))}};
+      await T('1) 인터넷',async()=>{const r=await fetch(location.href.split('#')[0],{cache:'no-store'});return r.status});
+      await T('2) 저장소 읽기',async()=>{const r=await fetch(`${FB_URL}/${DB_PATH}.json?t=${Date.now()}`,{cache:'no-store'});return r.status});
+      await T('3) 저장소 쓰기',async()=>{const r=await fetch(`${FB_URL}/diag.json`,{method:'PUT',body:JSON.stringify(Date.now())});return r.status});
+      L.push('주문 '+QUEUE.length+'건 · '+navigator.userAgent.slice(0,50));ADMIN.diag=L.join('\n');render()})();return}
     case 'closesync':ADMIN.syncOpen=false;break;
-    case 'synccopy':{const txt=location.origin+location.pathname+'#bin='+BIN_ID;try{navigator.clipboard.writeText(txt).then(()=>{ADMIN.toast='URL 복사됨! 다른 아이패드에 붙여넣으세요';render()}).catch(()=>{ADMIN.toast='복사 실패 — 직접 입력하세요';render()})}catch(e){ADMIN.toast='복사 실패';render()}return}
-    case 'syncnew':{BIN_ID='';localStorage.removeItem('TJ_BIN');history.replaceState(null,'',location.pathname);ensureBin().then(()=>{syncRead();render()});ADMIN.toast='새 저장소 만드는 중...';break}
-    case 'syncsave':{const inp=document.getElementById('binid-input');const id=(inp?inp.value:'').trim();if(!validBin(id)){ADMIN.toast='저장소 ID는 24자리 영문·숫자여야 해요 (예: 6ad47618ac6210605a3b7828)';break}BIN_ID=id;localStorage.setItem('TJ_BIN',id);location.hash='bin='+id;lastSync='';syncRead();ADMIN.syncOpen=false;ADMIN.toast='저장소 연결됨';break}
     case 'apin':if(ADMIN.pin.length<4)ADMIN.pin+=v;if(ADMIN.pin.length===4){if(ADMIN.pin==='0517'){ADMIN.on=true;ADMIN.pin=''}else{ADMIN.pin='';render();ADMIN.toast='비밀번호가 틀렸어요';return}}break;
     case 'apinclr':ADMIN.pin='';break;
     case 'exitadmin':ADMIN.on=false;ADMIN.pin='';break;
@@ -841,7 +819,7 @@ document.addEventListener('click',e=>{
     case 'cancelform':ADMIN.form=null;break;
     case 'okform':{const F=ADMIN.form;if(!F)break;const nameInput=document.querySelector('[data-mk="name"]');if(nameInput)F.name=nameInput.value.trim();const emoInput=document.querySelector('[data-mk="emo"]');if(emoInput)F.emo=emoInput.value.trim();if(!F.name){ADMIN.toast='이름을 입력해주세요';break}
       if(F.kind==='newstaff'){STAFF.push({name:F.name,role:F.role,status:F.role==='여성'||F.role==='남성'?'대기':'대기중',until:null});ADMIN.toast='배달부가 추가되었어요'}
-      else if(F.kind==='newroom'){ROOMS.push({id:F.name,type:F.type,guest:null,until:null});ADMIN.toast='룸이 추가되었어요'}
+      else if(F.kind==='newroom'){ROOMS.push({id:F.name,type:F.type,guest:null,until:null});ADMIN.toast='주소가 추가되었어요'}
       else if(F.kind==='addlist'){if(F.subk==='pressures')PRESSURES.push(F.name);else{FOCUS.push(typeof FOCUS[0]==='string'?F.name:[F.name,F.emo||''])}ADMIN.toast='추가되었어요'}
       else if(F.kind==='editlist'){const arr=F.subk==='pressures'?PRESSURES:FOCUS;if(typeof arr[F.idx]==='string')arr[F.idx]=F.name;else arr[F.idx]=[F.name,F.emo||''];ADMIN.toast='수정되었어요'}
       ADMIN.form=null;break}
@@ -851,13 +829,13 @@ document.addEventListener('click',e=>{
     case 'startnow':{const q=QUEUE.find(x=>x.no===v);if(q){q.status='배달중';q.start=hm(new Date());const r=ROOMS.find(rr=>!rr.guest&&(true));if(r){r.guest=q.no;q.room=r.id}}break}
     case 'finish':{const i=QUEUE.findIndex(q=>q.no===v);if(i>=0){const q=QUEUE[i];ROOMS.forEach(r=>{if(r.guest===q.no){r.guest=null;r.until=null}});QUEUE.splice(i,1)}break}
     case 'newroom':ADMIN.form={kind:'newroom',title:'주소 추가',name:'',type:'일반'};break;
-    case 'delroom':{const i=+t.dataset.i;if(ROOMS[i].guest){ADMIN.toast='사용 중인 룸은 삭제할 수 없어요';break}ROOMS.splice(i,1);ADMIN.toast='룸이 삭제되었어요';break}
-    case 'newstaff':ADMIN.form={kind:'newstaff',title:'관리사 추가',name:'',role:'F'};break;
+    case 'delroom':{const i=+t.dataset.i;if(ROOMS[i].guest){ADMIN.toast='배달 중인 주소는 삭제할 수 없어요';break}ROOMS.splice(i,1);ADMIN.toast='주소가 삭제되었어요';break}
+    case 'newstaff':ADMIN.form={kind:'newstaff',title:'배달부 추가',name:'',role:'F'};break;
     case 'togglestaff':{const i=+t.dataset.i;const s=STAFF[i];s.status=s.status==='배달중'?'대기':'배달중';s.until=s.status==='배달중'?hm(new Date(Date.now()+60*60000)):null;break}
     case 'delstaff':{STAFF.splice(+t.dataset.i,1)}break;
     case 'resetstats':{STATS.revenue=0;STATS.orders=0}break;
     case 'assign':case 'call':/* 데모 */break;
-    case 'newcourse':ADMIN.on='edit';ADMIN.edit={kind:'course',isNew:true,id:'c'+Date.now(),emo:'🌿',name:'',tag:'건식',desc:'',pricesArr:[[60,50000]]};break;
+    case 'newcourse':ADMIN.on='edit';ADMIN.edit={kind:'course',isNew:true,id:'c'+Date.now(),emo:'💌',name:'',tag:'보통',desc:'',pricesArr:[[1,500]]};break;
     case 'editcourse':{const c=COURSES.find(x=>x.id===v);ADMIN.on='edit';ADMIN.edit={kind:'course',isNew:false,id:c.id,emo:c.emo,name:c.name,tag:c.tag,desc:c.desc,pricesArr:Object.entries(c.prices).map(([m,p])=>[+m,p])};break}
     case 'delcourse':{const i=COURSES.findIndex(x=>x.id===v);if(i>=0)COURSES.splice(i,1)}break;
     case 'newaddon':ADMIN.on='edit';ADMIN.edit={kind:'addon',isNew:true,id:'a'+Date.now(),emo:'✨',name:'',price:10000};break;
